@@ -30,6 +30,10 @@ restarts. It is tied to this build of the game; other versions will not match.
 4. Tick **AUTO-FIND POINTERS**. Rows fill in immediately.
 5. Optionally tick **MODE: Windowed UI** for the trainer window.
 
+![Ticking ACTIVATE THIS FIRST, then AUTO-FIND POINTERS — the rows fill with live addresses and values within seconds](https://raw.githubusercontent.com/altxxr0/KeepDrivingCE/main/media/01_activate.gif)
+
+*Ticking ACTIVATE THIS FIRST, then AUTO-FIND POINTERS — the rows fill with live addresses and values within seconds*
+
 ---
 
 ## Features
@@ -48,6 +52,14 @@ buttons — tick one and the other unticks. The cheat table stays open in both.
 Nothing is duplicated: every control in the window drives the matching cheat table
 entry, so **Freeze** is Cheat Engine's own freeze. The window refreshes once a second
 and will not overwrite a box you are part way through typing into.
+
+![MODE: Windowed UI — the trainer opens with all twelve values live, and the cheat table stays open behind it](https://raw.githubusercontent.com/altxxr0/KeepDrivingCE/main/media/02_windowed_ui.gif)
+
+*MODE: Windowed UI — the trainer opens with all twelve values live, and the cheat table stays open behind it*
+
+![MODE: Advanced UI — the plain cheat table with the memory scanner](https://raw.githubusercontent.com/altxxr0/KeepDrivingCE/main/media/06_advanced_ui.gif)
+
+*MODE: Advanced UI — the plain cheat table with the memory scanner*
 
 ### Automatic pointer finder
 
@@ -91,6 +103,10 @@ the id and leave all of that derived state stale.
 game is running it overwrites the save on every autosave, so the editor refuses to
 write and tells you why. Every write leaves a `.bak` beside the save.
 
+![The editor opened while the game is running — the seats and levels are listed, the guard turns red and the write buttons are disabled](https://raw.githubusercontent.com/altxxr0/KeepDrivingCE/main/media/07_hitchhiker.gif)
+
+*The editor opened while the game is running — the seats and levels are listed, the guard turns red and the write buttons are disabled*
+
 ### Core values
 
 All twelve verified working — they aim, read, write and freeze, and the written
@@ -102,9 +118,21 @@ Car health · Car health max · Skill points · Day · Hour · Minute
 Freezing Clock-Hour and Calendar-Day stops time and quest deadlines — verified: the
 dash clock stops while fuel keeps draining.
 
+![Typing a number and pressing Set — money goes from 50.5 to 99999](https://raw.githubusercontent.com/altxxr0/KeepDrivingCE/main/media/03_set_value.gif)
+
+*Typing a number and pressing Set — money goes from 50.5 to 99999*
+
+![Ticking Freeze locks the value — it is Cheat Engine's own freeze, so the row in the table freezes too](https://raw.githubusercontent.com/altxxr0/KeepDrivingCE/main/media/04_freeze.gif)
+
+*Ticking Freeze locks the value — it is Cheat Engine's own freeze, so the row in the table freezes too*
+
 ### Game speed
 
 `0.25x`, `0.5x`, `Normal 1x`. See the limitation below before expecting more.
+
+![Switching to 0.25x and back to Normal](https://raw.githubusercontent.com/altxxr0/KeepDrivingCE/main/media/05_game_speed.gif)
+
+*Switching to 0.25x and back to Normal*
 
 ---
 
@@ -192,5 +220,9 @@ everything below it.
 
 Every `.CT` here carries that credit as a top row that opens this repo when ticked, and
 as a block inside the main script's header comment.
+
+![Ticking the credit row opens this repo](https://raw.githubusercontent.com/altxxr0/KeepDrivingCE/main/media/08_watermark.gif)
+
+*Ticking the credit row opens this repo*
 
 Licensed under the GPL v2 — see [LICENSE](LICENSE).
