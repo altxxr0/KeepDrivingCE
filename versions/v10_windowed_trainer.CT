@@ -1,0 +1,3664 @@
+<?xml version='1.0' encoding='utf-8'?>
+<CheatTable CheatEngineTableVersion="45">
+  <CheatEntries>
+    <CheatEntry><ID>9900</ID><Description>"[ Altxxr0 ]   github.com/altxxr0/KeepDrivingCE   -- tick to open the repo"</Description><VariableType>Auto Assembler Script</VariableType><AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+shellExecute("https://github.com/altxxr0/KeepDrivingCE")
+{$asm}
+
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+{$asm}
+</AssemblerScript></CheatEntry><CheatEntry>
+      <ID>1000</ID>
+      <Description>"Keep Driving v1.3.1.1d  --  ACTIVATE THIS FIRST"</Description>
+      <Options moAlwaysHideChildren="1" moAllowManualCollapseAndExpand="1" />
+      <Color>2B1CE3</Color>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{ Keep Driving v1.3.1.1d  --  corrected build (v3)
+
+  WHAT THIS TABLE ACTUALLY DOES, MEASURED
+
+  This is a GameMaker (YYC) build. Gameplay values live in a hash map whose heap
+  addresses and slot offsets differ on every launch, so static pointer paths are
+  useless. What is stable is the code plus the variable-name table in .data, so
+  the script below hooks Variable_Get, matches the variable id, and records the
+  RValue address from the copy helper underneath it. Rows are pointers to those
+  recorded addresses, so they re-aim every launch and freezing follows the value.
+
+  EVERY ROW BELOW WAS TESTED IN A RUNNING GAME. Results:
+
+  CORE - 12 of 12 work. Verified aiming, reading, writing and freezing, and the
+  written values were confirmed in savedata.ini after a save. Money's HUD counter
+  is repainted lazily so it can lag, but the row does track the wallet.
+  Gas Tank Capacity, Energy Max and Car Health Max are session-only - they are not
+  stored in the save, and the game recomputes Energy Max when you get tired.
+
+  SITUATIONAL - 11 of 40 populate. They are in the WORKING group, each labelled
+  with what it actually reads. The other 29 never populated in any context and are
+  parked in the BROKEN group at the bottom rather than left looking usable. 23 of
+  those 29 were tested with their own screen open and the value visibly on display
+  - a shop tooltip reading 11.25, a garage quoting 55, a glovebox showing 5/5 - and
+  the row still read 0. Two of them (item charges, glovebox charges) hold arrays,
+  not numbers, so a Double row could never have worked. The remaining 6 could not
+  be reached: no work screen and no explore site came up.
+
+  Reviving the BROKEN rows needs a variable-discovery pass, not a better hook. An
+  instrumented log of every id the game asks for showed 37 of the 52 ids are never
+  requested at all, so those names are not what the game uses for those values. A
+  second capture point was built and tested against the slot-lookup return value
+  and it did not help: 6.8 million lookups went past it and only gas, energy and
+  car health ever matched.
+
+  GAME SPEED - slowing works, speeding up does NOT. Measured against real driving
+  (fuel burn per wall-clock second, same road segment, back to back):
+      0.25x  -&gt;  0.30x of normal    works
+      4x     -&gt;  0.99x and 1.00x    no effect at all, measured twice
+  Cheat Engine's speedhack is set correctly in every case - the game simply will
+  not run faster than real time. The 2x and 4x entries have been REMOVED because
+  they did nothing. 0.5x is kept: same mechanism as the measured 0.25x, but it was
+  not separately measured.
+
+
+  AUTOMATIC POINTER FINDER  (the entry directly under this script)
+
+  The script above can only fill a row once the game happens to READ that
+  variable, which is why so many rows sat at 0. The finder does not wait. It
+  captures the stats object, walks the variable hash map inside it, and writes
+  each variable's live address straight into the slot this script allocated:
+
+      object + 0x48  -&gt; hash map        map + 0x08 -&gt; bucket mask
+      map + 0x10     -&gt; bucket array    16 bytes per entry
+      entry + 0x00   -&gt; RValue*         entry + 0x0C -&gt; (varid + 1), bit 31 clear
+      RValue: value at +0, kind at +12  (0 = number, 2 = array)
+
+  Enable the main script first, then enable AUTO-FIND POINTERS. It re-runs every
+  2 seconds, so rows re-aim by themselves after a load or a restart.
+
+  What it changes, measured: 21 rows are resolved the moment a save is loaded,
+  with no gameplay at all - including three that the hook could never reach.
+  Gas drain rate is now live and was verified end to end: setting it to 0 took
+  fuel burn from 0.0349 gas/s to 0.0000 while driving. Cost modifier - gas and
+  Cost modifier - energy also populate.
+
+  It does NOT revive everything. 29 of the 52 variables are not in the stats
+  object at all, so they stay dead until someone finds which object owns them.
+  Two more (ailment timer and duration) are arrays rather than numbers, so the
+  finder deliberately skips them instead of writing a garbage pointer into a
+  Double row.
+
+
+  COMPACT MODE  (second entry below)
+
+  Cheat Engine's main form is only four stacked panels: the scanner on top, a
+  splitter, the cheat table, and the Advanced Options strip at the bottom.
+  Compact mode hides the scanner and the splitter. The table panel is alClient,
+  so it expands to fill the window by itself, and the window shrinks to 600x560.
+
+  What stays: the menu bar (File / Table / Edit still work) and the Advanced
+  Options / Table Extras strip, since those belong to the table rather than the
+  scanner. What goes: New Scan, the value and scan-type boxes, the memory scan
+  options, the found-address list and Memory View.
+
+  Disabling it restores the exact previous layout, including the window's old
+  size and screen position. Enabling and disabling the scripts works normally
+  while compact.
+
+
+  HITCHHIKER EDITOR  (third entry below)
+
+  Enabling it opens a small window: one dropdown per seat listing all 15
+  hitchhikers, a level box each, and Write save / Re-read / Empty car.
+
+  Passengers are a 4-seat manager, and the save mirrors the in-memory model
+  exactly - hhs is the count, hh_0..hh_3 hold who is in each seat (-1 empty),
+  with hh_level_N / hh_exp_N / hh_blocked_N alongside and hh_picked_up_K
+  recording who you have ever met.
+
+  The roster, in id order:
+      0 suit          1 hippie_girl   2 mechanic     3 hurricane
+      4 punk          5 dog           6 kid          7 songwriter
+      8 stranger      9 idiot        10 convict     11 sleeper
+     12 hiker        13 bride        14 couple
+
+  It writes the SAVE, not live memory, and that is deliberate: the game owns a
+  scr_load_hhs routine that rebuilds each passenger's name, portrait, skills and
+  perks from those fields when a save loads. Poking the in-memory slot_hh array
+  would set the id and leave all of that derived state stale.
+
+  So the flow is: edit, then load the save. Close the game first, or at least do
+  not let it autosave over your edit. Every write drops a .bak next to the save.
+  The save path is derived from the attached game process, so it follows the
+  game wherever it is installed.
+
+  The window itself now carries the numbered steps and a live readout of whether
+  Keep Driving is running, so the order is visible while you use it.
+
+  IMPORTANT - why an edit can look like it did nothing:
+
+  The game loads this file ONCE, when you pick Continue. If Keep Driving is
+  already running, your edit cannot touch the session it has in memory, and its
+  next autosave writes over the file. Selecting the process in Cheat Engine makes
+  no difference - the editor never writes to the process, only to the save.
+
+  So the editor now REFUSES to write while the game is running and says so. The
+  order that works is: close the game -&gt; write -&gt; start the game -&gt; Continue.
+
+  Levels are capped at 3, the seat manager's own level_max. Anything higher is
+  clamped and reported, since it is not a real level.
+
+  To remove a passenger you may not need this at all - the game has its own kick
+  button in the hitchhiker panel.
+
+
+
+  CHOOSING A UI
+
+  Two entries near the top pick how you drive the cheats. They work like radio
+  buttons - tick one and the other unticks. The cheat table stays open in BOTH.
+
+      MODE: Windowed UI   opens a window with the cheats in it: the script
+                          toggles, game speed, and the twelve core values each
+                          with a box, a Set button and a Freeze tick. The memory
+                          scanner is hidden so the table sits on its own behind
+                          the window.
+
+      MODE: Advanced UI   no trainer window - just the normal cheat table with
+                          the memory scanner, for working the address list
+                          directly.
+
+  Nothing is duplicated: every control in the window drives the matching cheat
+  table entry, so Freeze is Cheat Engine's own freeze and the values are exactly
+  as correct as the table is. The window refreshes once a second, and it will not
+  overwrite a box you are part way through typing into.
+
+  The window carries the twelve CORE values, which are the ones verified to work.
+  The situational rows stay in the table below - there are forty of them and only
+  fourteen populate, so putting them all in the window would be a wall of dead
+  boxes.
+
+  Unticking a mode does nothing on purpose; the tick shows which UI is active.
+  Switching to Advanced restores the window's previous size and screen position.
+
+  USEFUL COMBINATIONS
+
+  - Freeze Clock-Hour and Calendar-Day to stop time and quest deadlines. Verified:
+    the dash clock stops while fuel keeps draining.
+  - Raise Gas Tank Capacity BEFORE Gas, and Car Health Max / Energy Max before
+    their values, or the needle runs off the dial. Raising the maxima visibly
+    grows the dashboard gauges.
+
+  Tested 2026-08-28 against KeepDriving.exe v1.3.1.1d (30,260,736 bytes) across
+  full restarts, driving, road events, the shop, the fuel pump, the trunk, the
+  glovebox, the map and a garage.
+
+  ----------------------------------------------------------------------
+  Altxxr0        https://github.com/altxxr0/KeepDrivingCE
+  ----------------------------------------------------------------------
+
+}
+
+[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getOpenedProcessID()==0 then openProcess("KeepDriving.exe") end
+{$asm}
+
+aobscanmodule(kdVarGet,KeepDriving.exe,48 89 6C 24 18 48 89 7C 24 20 41 56 48 83 EC 40 44)
+aobscanmodule(kdCopy,KeepDriving.exe,48 8B 03 48 89 07 B0 01 48 83 C4 28 41 5E 41 5D 5F 5B C3 25)
+alloc(kdMem,$1000,kdVarGet)
+
+label(kdPending)
+label(kdP_money)
+label(kdP_gas)
+label(kdP_gas_max)
+label(kdP_energy)
+label(kdP_energy_max)
+label(kdP_energy_max_normal)
+label(kdP_car_health)
+label(kdP_car_health_max)
+label(kdP_skill_points)
+label(kdP_day)
+label(kdP_time_hour)
+label(kdP_time_minute)
+label(kdP_month)
+label(kdP_day_max)
+label(kdP_road_level)
+label(kdP_threat)
+label(kdP_threat_max)
+label(kdP_enemy_level)
+label(kdP_card_rarity)
+label(kdP_experience)
+label(kdP_exp_max)
+label(kdP_level)
+label(kdP_level_max)
+label(kdP_items)
+label(kdP_item_charges)
+label(kdP_gb_items)
+label(kdP_gb_item_charges)
+label(kdP_item_price)
+label(kdP_upg_price)
+label(kdP_cost_per_gas)
+label(kdP_rep_cost_per_durability)
+label(kdP_money_cost_mod)
+label(kdP_gas_cost_mod)
+label(kdP_energy_cost_mod)
+label(kdP_durability_cost_mod)
+label(kdP_gas_drain)
+label(kdP_pay)
+label(kdP_work_pay)
+label(kdP_work_cost)
+label(kdP_work_time)
+label(kdP_ailments)
+label(kdP_ailments_max)
+label(kdP_ailment_timer)
+label(kdP_ailment_timer_max)
+label(kdP_tired_stacks)
+label(kdP_hh_active)
+label(kdP_hh_level)
+label(kdP_seat_active)
+label(kdP_explore_bags)
+label(kdP_explore_places)
+label(kdP_quests)
+label(kdP_car_speed)
+label(kdVgHook)
+label(kdVgRet)
+label(kdTagDone)
+label(kdChk00)
+label(kdChk01)
+label(kdChk02)
+label(kdChk03)
+label(kdChk04)
+label(kdChk05)
+label(kdChk06)
+label(kdChk07)
+label(kdChk08)
+label(kdChk09)
+label(kdChk10)
+label(kdChk11)
+label(kdChk12)
+label(kdChk13)
+label(kdChk14)
+label(kdChk15)
+label(kdChk16)
+label(kdChk17)
+label(kdChk18)
+label(kdChk19)
+label(kdChk20)
+label(kdChk21)
+label(kdChk22)
+label(kdChk23)
+label(kdChk24)
+label(kdChk25)
+label(kdChk26)
+label(kdChk27)
+label(kdChk28)
+label(kdChk29)
+label(kdChk30)
+label(kdChk31)
+label(kdChk32)
+label(kdChk33)
+label(kdChk34)
+label(kdChk35)
+label(kdChk36)
+label(kdChk37)
+label(kdChk38)
+label(kdChk39)
+label(kdChk40)
+label(kdChk41)
+label(kdChk42)
+label(kdChk43)
+label(kdChk44)
+label(kdChk45)
+label(kdChk46)
+label(kdChk47)
+label(kdChk48)
+label(kdChk49)
+label(kdChk50)
+label(kdChk51)
+label(kdCpHook)
+label(kdCpRet)
+label(kdCopyOrig)
+label(kdStDone)
+label(kdSto00)
+label(kdSto01)
+label(kdSto02)
+label(kdSto03)
+label(kdSto04)
+label(kdSto05)
+label(kdSto06)
+label(kdSto07)
+label(kdSto08)
+label(kdSto09)
+label(kdSto10)
+label(kdSto11)
+label(kdSto12)
+label(kdSto13)
+label(kdSto14)
+label(kdSto15)
+label(kdSto16)
+label(kdSto17)
+label(kdSto18)
+label(kdSto19)
+label(kdSto20)
+label(kdSto21)
+label(kdSto22)
+label(kdSto23)
+label(kdSto24)
+label(kdSto25)
+label(kdSto26)
+label(kdSto27)
+label(kdSto28)
+label(kdSto29)
+label(kdSto30)
+label(kdSto31)
+label(kdSto32)
+label(kdSto33)
+label(kdSto34)
+label(kdSto35)
+label(kdSto36)
+label(kdSto37)
+label(kdSto38)
+label(kdSto39)
+label(kdSto40)
+label(kdSto41)
+label(kdSto42)
+label(kdSto43)
+label(kdSto44)
+label(kdSto45)
+label(kdSto46)
+label(kdSto47)
+label(kdSto48)
+label(kdSto49)
+label(kdSto50)
+label(kdSto51)
+
+registersymbol(kdPending)
+registersymbol(kdP_money)
+registersymbol(kdP_gas)
+registersymbol(kdP_gas_max)
+registersymbol(kdP_energy)
+registersymbol(kdP_energy_max)
+registersymbol(kdP_energy_max_normal)
+registersymbol(kdP_car_health)
+registersymbol(kdP_car_health_max)
+registersymbol(kdP_skill_points)
+registersymbol(kdP_day)
+registersymbol(kdP_time_hour)
+registersymbol(kdP_time_minute)
+registersymbol(kdP_month)
+registersymbol(kdP_day_max)
+registersymbol(kdP_road_level)
+registersymbol(kdP_threat)
+registersymbol(kdP_threat_max)
+registersymbol(kdP_enemy_level)
+registersymbol(kdP_card_rarity)
+registersymbol(kdP_experience)
+registersymbol(kdP_exp_max)
+registersymbol(kdP_level)
+registersymbol(kdP_level_max)
+registersymbol(kdP_items)
+registersymbol(kdP_item_charges)
+registersymbol(kdP_gb_items)
+registersymbol(kdP_gb_item_charges)
+registersymbol(kdP_item_price)
+registersymbol(kdP_upg_price)
+registersymbol(kdP_cost_per_gas)
+registersymbol(kdP_rep_cost_per_durability)
+registersymbol(kdP_money_cost_mod)
+registersymbol(kdP_gas_cost_mod)
+registersymbol(kdP_energy_cost_mod)
+registersymbol(kdP_durability_cost_mod)
+registersymbol(kdP_gas_drain)
+registersymbol(kdP_pay)
+registersymbol(kdP_work_pay)
+registersymbol(kdP_work_cost)
+registersymbol(kdP_work_time)
+registersymbol(kdP_ailments)
+registersymbol(kdP_ailments_max)
+registersymbol(kdP_ailment_timer)
+registersymbol(kdP_ailment_timer_max)
+registersymbol(kdP_tired_stacks)
+registersymbol(kdP_hh_active)
+registersymbol(kdP_hh_level)
+registersymbol(kdP_seat_active)
+registersymbol(kdP_explore_bags)
+registersymbol(kdP_explore_places)
+registersymbol(kdP_quests)
+registersymbol(kdP_car_speed)
+registersymbol(kdVarGet)
+registersymbol(kdCopy)
+
+kdMem:
+kdPending:
+  dd 0
+  dd 0
+kdP_money:
+  dq 0
+kdP_gas:
+  dq 0
+kdP_gas_max:
+  dq 0
+kdP_energy:
+  dq 0
+kdP_energy_max:
+  dq 0
+kdP_energy_max_normal:
+  dq 0
+kdP_car_health:
+  dq 0
+kdP_car_health_max:
+  dq 0
+kdP_skill_points:
+  dq 0
+kdP_day:
+  dq 0
+kdP_time_hour:
+  dq 0
+kdP_time_minute:
+  dq 0
+kdP_month:
+  dq 0
+kdP_day_max:
+  dq 0
+kdP_road_level:
+  dq 0
+kdP_threat:
+  dq 0
+kdP_threat_max:
+  dq 0
+kdP_enemy_level:
+  dq 0
+kdP_card_rarity:
+  dq 0
+kdP_experience:
+  dq 0
+kdP_exp_max:
+  dq 0
+kdP_level:
+  dq 0
+kdP_level_max:
+  dq 0
+kdP_items:
+  dq 0
+kdP_item_charges:
+  dq 0
+kdP_gb_items:
+  dq 0
+kdP_gb_item_charges:
+  dq 0
+kdP_item_price:
+  dq 0
+kdP_upg_price:
+  dq 0
+kdP_cost_per_gas:
+  dq 0
+kdP_rep_cost_per_durability:
+  dq 0
+kdP_money_cost_mod:
+  dq 0
+kdP_gas_cost_mod:
+  dq 0
+kdP_energy_cost_mod:
+  dq 0
+kdP_durability_cost_mod:
+  dq 0
+kdP_gas_drain:
+  dq 0
+kdP_pay:
+  dq 0
+kdP_work_pay:
+  dq 0
+kdP_work_cost:
+  dq 0
+kdP_work_time:
+  dq 0
+kdP_ailments:
+  dq 0
+kdP_ailments_max:
+  dq 0
+kdP_ailment_timer:
+  dq 0
+kdP_ailment_timer_max:
+  dq 0
+kdP_tired_stacks:
+  dq 0
+kdP_hh_active:
+  dq 0
+kdP_hh_level:
+  dq 0
+kdP_seat_active:
+  dq 0
+kdP_explore_bags:
+  dq 0
+kdP_explore_places:
+  dq 0
+kdP_quests:
+  dq 0
+kdP_car_speed:
+  dq 0
+
+kdVgHook:
+  pushfq
+  push rax
+  mov dword ptr [kdPending],0
+kdChk00:
+  mov rax,KeepDriving.exe+1B66C98
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk01
+  cmp edx,eax
+  jne kdChk01
+  mov dword ptr [kdPending],1
+  jmp kdTagDone
+kdChk01:
+  mov rax,KeepDriving.exe+1B66C78
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk02
+  cmp edx,eax
+  jne kdChk02
+  mov dword ptr [kdPending],2
+  jmp kdTagDone
+kdChk02:
+  mov rax,KeepDriving.exe+1B65B08
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk03
+  cmp edx,eax
+  jne kdChk03
+  mov dword ptr [kdPending],3
+  jmp kdTagDone
+kdChk03:
+  mov rax,KeepDriving.exe+1B65D78
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk04
+  cmp edx,eax
+  jne kdChk04
+  mov dword ptr [kdPending],4
+  jmp kdTagDone
+kdChk04:
+  mov rax,KeepDriving.exe+1B65CA8
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk05
+  cmp edx,eax
+  jne kdChk05
+  mov dword ptr [kdPending],5
+  jmp kdTagDone
+kdChk05:
+  mov rax,KeepDriving.exe+1B65938
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk06
+  cmp edx,eax
+  jne kdChk06
+  mov dword ptr [kdPending],6
+  jmp kdTagDone
+kdChk06:
+  mov rax,KeepDriving.exe+1B66CD8
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk07
+  cmp edx,eax
+  jne kdChk07
+  mov dword ptr [kdPending],7
+  jmp kdTagDone
+kdChk07:
+  mov rax,KeepDriving.exe+1B65A08
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk08
+  cmp edx,eax
+  jne kdChk08
+  mov dword ptr [kdPending],8
+  jmp kdTagDone
+kdChk08:
+  mov rax,KeepDriving.exe+1B74FF8
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk09
+  cmp edx,eax
+  jne kdChk09
+  mov dword ptr [kdPending],9
+  jmp kdTagDone
+kdChk09:
+  mov rax,KeepDriving.exe+1B6DD18
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk10
+  cmp edx,eax
+  jne kdChk10
+  mov dword ptr [kdPending],10
+  jmp kdTagDone
+kdChk10:
+  mov rax,KeepDriving.exe+1B79868
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk11
+  cmp edx,eax
+  jne kdChk11
+  mov dword ptr [kdPending],11
+  jmp kdTagDone
+kdChk11:
+  mov rax,KeepDriving.exe+1B79848
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk12
+  cmp edx,eax
+  jne kdChk12
+  mov dword ptr [kdPending],12
+  jmp kdTagDone
+kdChk12:
+  mov rax,KeepDriving.exe+1B6DC38
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk13
+  cmp edx,eax
+  jne kdChk13
+  mov dword ptr [kdPending],13
+  jmp kdTagDone
+kdChk13:
+  mov rax,KeepDriving.exe+1B57A18
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk14
+  cmp edx,eax
+  jne kdChk14
+  mov dword ptr [kdPending],14
+  jmp kdTagDone
+kdChk14:
+  mov rax,KeepDriving.exe+1BC80D0
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk15
+  cmp edx,eax
+  jne kdChk15
+  mov dword ptr [kdPending],15
+  jmp kdTagDone
+kdChk15:
+  mov rax,KeepDriving.exe+1B5A188
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk16
+  cmp edx,eax
+  jne kdChk16
+  mov dword ptr [kdPending],16
+  jmp kdTagDone
+kdChk16:
+  mov rax,KeepDriving.exe+1B5B068
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk17
+  cmp edx,eax
+  jne kdChk17
+  mov dword ptr [kdPending],17
+  jmp kdTagDone
+kdChk17:
+  mov rax,KeepDriving.exe+1B70B98
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk18
+  cmp edx,eax
+  jne kdChk18
+  mov dword ptr [kdPending],18
+  jmp kdTagDone
+kdChk18:
+  mov rax,KeepDriving.exe+1B5A9F8
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk19
+  cmp edx,eax
+  jne kdChk19
+  mov dword ptr [kdPending],19
+  jmp kdTagDone
+kdChk19:
+  mov rax,KeepDriving.exe+1B6E138
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk20
+  cmp edx,eax
+  jne kdChk20
+  mov dword ptr [kdPending],20
+  jmp kdTagDone
+kdChk20:
+  mov rax,KeepDriving.exe+1B758F8
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk21
+  cmp edx,eax
+  jne kdChk21
+  mov dword ptr [kdPending],21
+  jmp kdTagDone
+kdChk21:
+  mov rax,KeepDriving.exe+1B565D8
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk22
+  cmp edx,eax
+  jne kdChk22
+  mov dword ptr [kdPending],22
+  jmp kdTagDone
+kdChk22:
+  mov rax,KeepDriving.exe+1B75988
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk23
+  cmp edx,eax
+  jne kdChk23
+  mov dword ptr [kdPending],23
+  jmp kdTagDone
+kdChk23:
+  mov rax,KeepDriving.exe+1B65E68
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk24
+  cmp edx,eax
+  jne kdChk24
+  mov dword ptr [kdPending],24
+  jmp kdTagDone
+kdChk24:
+  mov rax,KeepDriving.exe+1B70ED8
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk25
+  cmp edx,eax
+  jne kdChk25
+  mov dword ptr [kdPending],25
+  jmp kdTagDone
+kdChk25:
+  mov rax,KeepDriving.exe+1B75458
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk26
+  cmp edx,eax
+  jne kdChk26
+  mov dword ptr [kdPending],26
+  jmp kdTagDone
+kdChk26:
+  mov rax,KeepDriving.exe+1B76028
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk27
+  cmp edx,eax
+  jne kdChk27
+  mov dword ptr [kdPending],27
+  jmp kdTagDone
+kdChk27:
+  mov rax,KeepDriving.exe+1B8DE58
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk28
+  cmp edx,eax
+  jne kdChk28
+  mov dword ptr [kdPending],28
+  jmp kdTagDone
+kdChk28:
+  mov rax,KeepDriving.exe+1B74508
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk29
+  cmp edx,eax
+  jne kdChk29
+  mov dword ptr [kdPending],29
+  jmp kdTagDone
+kdChk29:
+  mov rax,KeepDriving.exe+1BCAB80
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk30
+  cmp edx,eax
+  jne kdChk30
+  mov dword ptr [kdPending],30
+  jmp kdTagDone
+kdChk30:
+  mov rax,KeepDriving.exe+1BCA080
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk31
+  cmp edx,eax
+  jne kdChk31
+  mov dword ptr [kdPending],31
+  jmp kdTagDone
+kdChk31:
+  mov rax,KeepDriving.exe+1B61B88
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk32
+  cmp edx,eax
+  jne kdChk32
+  mov dword ptr [kdPending],32
+  jmp kdTagDone
+kdChk32:
+  mov rax,KeepDriving.exe+1B61B78
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk33
+  cmp edx,eax
+  jne kdChk33
+  mov dword ptr [kdPending],33
+  jmp kdTagDone
+kdChk33:
+  mov rax,KeepDriving.exe+1B61BE8
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk34
+  cmp edx,eax
+  jne kdChk34
+  mov dword ptr [kdPending],34
+  jmp kdTagDone
+kdChk34:
+  mov rax,KeepDriving.exe+1B61BB8
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk35
+  cmp edx,eax
+  jne kdChk35
+  mov dword ptr [kdPending],35
+  jmp kdTagDone
+kdChk35:
+  mov rax,KeepDriving.exe+1B61EF8
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk36
+  cmp edx,eax
+  jne kdChk36
+  mov dword ptr [kdPending],36
+  jmp kdTagDone
+kdChk36:
+  mov rax,KeepDriving.exe+1B74E48
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk37
+  cmp edx,eax
+  jne kdChk37
+  mov dword ptr [kdPending],37
+  jmp kdTagDone
+kdChk37:
+  mov rax,KeepDriving.exe+1B68188
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk38
+  cmp edx,eax
+  jne kdChk38
+  mov dword ptr [kdPending],38
+  jmp kdTagDone
+kdChk38:
+  mov rax,KeepDriving.exe+1B680E8
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk39
+  cmp edx,eax
+  jne kdChk39
+  mov dword ptr [kdPending],39
+  jmp kdTagDone
+kdChk39:
+  mov rax,KeepDriving.exe+1B68218
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk40
+  cmp edx,eax
+  jne kdChk40
+  mov dword ptr [kdPending],40
+  jmp kdTagDone
+kdChk40:
+  mov rax,KeepDriving.exe+1B65D28
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk41
+  cmp edx,eax
+  jne kdChk41
+  mov dword ptr [kdPending],41
+  jmp kdTagDone
+kdChk41:
+  mov rax,KeepDriving.exe+1B65E08
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk42
+  cmp edx,eax
+  jne kdChk42
+  mov dword ptr [kdPending],42
+  jmp kdTagDone
+kdChk42:
+  mov rax,KeepDriving.exe+1B65D18
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk43
+  cmp edx,eax
+  jne kdChk43
+  mov dword ptr [kdPending],43
+  jmp kdTagDone
+kdChk43:
+  mov rax,KeepDriving.exe+1B65E18
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk44
+  cmp edx,eax
+  jne kdChk44
+  mov dword ptr [kdPending],44
+  jmp kdTagDone
+kdChk44:
+  mov rax,KeepDriving.exe+1B65CD8
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk45
+  cmp edx,eax
+  jne kdChk45
+  mov dword ptr [kdPending],45
+  jmp kdTagDone
+kdChk45:
+  mov rax,KeepDriving.exe+1B62F28
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk46
+  cmp edx,eax
+  jne kdChk46
+  mov dword ptr [kdPending],46
+  jmp kdTagDone
+kdChk46:
+  mov rax,KeepDriving.exe+1B6E448
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk47
+  cmp edx,eax
+  jne kdChk47
+  mov dword ptr [kdPending],47
+  jmp kdTagDone
+kdChk47:
+  mov rax,KeepDriving.exe+1B75E18
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk48
+  cmp edx,eax
+  jne kdChk48
+  mov dword ptr [kdPending],48
+  jmp kdTagDone
+kdChk48:
+  mov rax,KeepDriving.exe+1B72DE8
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk49
+  cmp edx,eax
+  jne kdChk49
+  mov dword ptr [kdPending],49
+  jmp kdTagDone
+kdChk49:
+  mov rax,KeepDriving.exe+1B77EC8
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk50
+  cmp edx,eax
+  jne kdChk50
+  mov dword ptr [kdPending],50
+  jmp kdTagDone
+kdChk50:
+  mov rax,KeepDriving.exe+1B65C08
+  mov eax,[rax]
+  cmp eax,-1
+  je kdChk51
+  cmp edx,eax
+  jne kdChk51
+  mov dword ptr [kdPending],51
+  jmp kdTagDone
+kdChk51:
+  mov rax,KeepDriving.exe+1B78318
+  mov eax,[rax]
+  cmp eax,-1
+  je kdTagDone
+  cmp edx,eax
+  jne kdTagDone
+  mov dword ptr [kdPending],52
+  jmp kdTagDone
+kdTagDone:
+  pop rax
+  popfq
+  mov [rsp+18],rbp
+  mov [rsp+20],rdi
+  push r14
+  sub rsp,40
+  jmp kdVgRet
+
+kdCpHook:
+  pushfq
+  cmp dword ptr [kdPending],0
+  je kdCopyOrig
+  push rax
+  mov eax,[kdPending]
+kdSto00:
+  cmp eax,1
+  jne kdSto01
+  mov [kdP_money],rbx
+  jmp kdStDone
+kdSto01:
+  cmp eax,2
+  jne kdSto02
+  mov [kdP_gas],rbx
+  jmp kdStDone
+kdSto02:
+  cmp eax,3
+  jne kdSto03
+  mov [kdP_gas_max],rbx
+  jmp kdStDone
+kdSto03:
+  cmp eax,4
+  jne kdSto04
+  mov [kdP_energy],rbx
+  jmp kdStDone
+kdSto04:
+  cmp eax,5
+  jne kdSto05
+  mov [kdP_energy_max],rbx
+  jmp kdStDone
+kdSto05:
+  cmp eax,6
+  jne kdSto06
+  mov [kdP_energy_max_normal],rbx
+  jmp kdStDone
+kdSto06:
+  cmp eax,7
+  jne kdSto07
+  mov [kdP_car_health],rbx
+  jmp kdStDone
+kdSto07:
+  cmp eax,8
+  jne kdSto08
+  mov [kdP_car_health_max],rbx
+  jmp kdStDone
+kdSto08:
+  cmp eax,9
+  jne kdSto09
+  mov [kdP_skill_points],rbx
+  jmp kdStDone
+kdSto09:
+  cmp eax,10
+  jne kdSto10
+  mov [kdP_day],rbx
+  jmp kdStDone
+kdSto10:
+  cmp eax,11
+  jne kdSto11
+  mov [kdP_time_hour],rbx
+  jmp kdStDone
+kdSto11:
+  cmp eax,12
+  jne kdSto12
+  mov [kdP_time_minute],rbx
+  jmp kdStDone
+kdSto12:
+  cmp eax,13
+  jne kdSto13
+  mov [kdP_month],rbx
+  jmp kdStDone
+kdSto13:
+  cmp eax,14
+  jne kdSto14
+  mov [kdP_day_max],rbx
+  jmp kdStDone
+kdSto14:
+  cmp eax,15
+  jne kdSto15
+  mov [kdP_road_level],rbx
+  jmp kdStDone
+kdSto15:
+  cmp eax,16
+  jne kdSto16
+  mov [kdP_threat],rbx
+  jmp kdStDone
+kdSto16:
+  cmp eax,17
+  jne kdSto17
+  mov [kdP_threat_max],rbx
+  jmp kdStDone
+kdSto17:
+  cmp eax,18
+  jne kdSto18
+  mov [kdP_enemy_level],rbx
+  jmp kdStDone
+kdSto18:
+  cmp eax,19
+  jne kdSto19
+  mov [kdP_card_rarity],rbx
+  jmp kdStDone
+kdSto19:
+  cmp eax,20
+  jne kdSto20
+  mov [kdP_experience],rbx
+  jmp kdStDone
+kdSto20:
+  cmp eax,21
+  jne kdSto21
+  mov [kdP_exp_max],rbx
+  jmp kdStDone
+kdSto21:
+  cmp eax,22
+  jne kdSto22
+  mov [kdP_level],rbx
+  jmp kdStDone
+kdSto22:
+  cmp eax,23
+  jne kdSto23
+  mov [kdP_level_max],rbx
+  jmp kdStDone
+kdSto23:
+  cmp eax,24
+  jne kdSto24
+  mov [kdP_items],rbx
+  jmp kdStDone
+kdSto24:
+  cmp eax,25
+  jne kdSto25
+  mov [kdP_item_charges],rbx
+  jmp kdStDone
+kdSto25:
+  cmp eax,26
+  jne kdSto26
+  mov [kdP_gb_items],rbx
+  jmp kdStDone
+kdSto26:
+  cmp eax,27
+  jne kdSto27
+  mov [kdP_gb_item_charges],rbx
+  jmp kdStDone
+kdSto27:
+  cmp eax,28
+  jne kdSto28
+  mov [kdP_item_price],rbx
+  jmp kdStDone
+kdSto28:
+  cmp eax,29
+  jne kdSto29
+  mov [kdP_upg_price],rbx
+  jmp kdStDone
+kdSto29:
+  cmp eax,30
+  jne kdSto30
+  mov [kdP_cost_per_gas],rbx
+  jmp kdStDone
+kdSto30:
+  cmp eax,31
+  jne kdSto31
+  mov [kdP_rep_cost_per_durability],rbx
+  jmp kdStDone
+kdSto31:
+  cmp eax,32
+  jne kdSto32
+  mov [kdP_money_cost_mod],rbx
+  jmp kdStDone
+kdSto32:
+  cmp eax,33
+  jne kdSto33
+  mov [kdP_gas_cost_mod],rbx
+  jmp kdStDone
+kdSto33:
+  cmp eax,34
+  jne kdSto34
+  mov [kdP_energy_cost_mod],rbx
+  jmp kdStDone
+kdSto34:
+  cmp eax,35
+  jne kdSto35
+  mov [kdP_durability_cost_mod],rbx
+  jmp kdStDone
+kdSto35:
+  cmp eax,36
+  jne kdSto36
+  mov [kdP_gas_drain],rbx
+  jmp kdStDone
+kdSto36:
+  cmp eax,37
+  jne kdSto37
+  mov [kdP_pay],rbx
+  jmp kdStDone
+kdSto37:
+  cmp eax,38
+  jne kdSto38
+  mov [kdP_work_pay],rbx
+  jmp kdStDone
+kdSto38:
+  cmp eax,39
+  jne kdSto39
+  mov [kdP_work_cost],rbx
+  jmp kdStDone
+kdSto39:
+  cmp eax,40
+  jne kdSto40
+  mov [kdP_work_time],rbx
+  jmp kdStDone
+kdSto40:
+  cmp eax,41
+  jne kdSto41
+  mov [kdP_ailments],rbx
+  jmp kdStDone
+kdSto41:
+  cmp eax,42
+  jne kdSto42
+  mov [kdP_ailments_max],rbx
+  jmp kdStDone
+kdSto42:
+  cmp eax,43
+  jne kdSto43
+  mov [kdP_ailment_timer],rbx
+  jmp kdStDone
+kdSto43:
+  cmp eax,44
+  jne kdSto44
+  mov [kdP_ailment_timer_max],rbx
+  jmp kdStDone
+kdSto44:
+  cmp eax,45
+  jne kdSto45
+  mov [kdP_tired_stacks],rbx
+  jmp kdStDone
+kdSto45:
+  cmp eax,46
+  jne kdSto46
+  mov [kdP_hh_active],rbx
+  jmp kdStDone
+kdSto46:
+  cmp eax,47
+  jne kdSto47
+  mov [kdP_hh_level],rbx
+  jmp kdStDone
+kdSto47:
+  cmp eax,48
+  jne kdSto48
+  mov [kdP_seat_active],rbx
+  jmp kdStDone
+kdSto48:
+  cmp eax,49
+  jne kdSto49
+  mov [kdP_explore_bags],rbx
+  jmp kdStDone
+kdSto49:
+  cmp eax,50
+  jne kdSto50
+  mov [kdP_explore_places],rbx
+  jmp kdStDone
+kdSto50:
+  cmp eax,51
+  jne kdSto51
+  mov [kdP_quests],rbx
+  jmp kdStDone
+kdSto51:
+  cmp eax,52
+  jne kdStDone
+  mov [kdP_car_speed],rbx
+  jmp kdStDone
+kdStDone:
+  pop rax
+  mov dword ptr [kdPending],0
+kdCopyOrig:
+  popfq
+  mov rax,[rbx]
+  mov [rdi],rax
+  jmp kdCpRet
+
+kdVarGet:
+  jmp kdVgHook
+  nop 0B
+kdVgRet:
+
+kdCopy:
+  jmp kdCpHook
+  nop
+kdCpRet:
+
+[DISABLE]
+kdVarGet:
+  db 48 89 6C 24 18 48 89 7C 24 20 41 56 48 83 EC 40
+
+kdCopy:
+  db 48 8B 03 48 89 07
+
+unregistersymbol(kdPending)
+unregistersymbol(kdP_money)
+unregistersymbol(kdP_gas)
+unregistersymbol(kdP_gas_max)
+unregistersymbol(kdP_energy)
+unregistersymbol(kdP_energy_max)
+unregistersymbol(kdP_energy_max_normal)
+unregistersymbol(kdP_car_health)
+unregistersymbol(kdP_car_health_max)
+unregistersymbol(kdP_skill_points)
+unregistersymbol(kdP_day)
+unregistersymbol(kdP_time_hour)
+unregistersymbol(kdP_time_minute)
+unregistersymbol(kdP_month)
+unregistersymbol(kdP_day_max)
+unregistersymbol(kdP_road_level)
+unregistersymbol(kdP_threat)
+unregistersymbol(kdP_threat_max)
+unregistersymbol(kdP_enemy_level)
+unregistersymbol(kdP_card_rarity)
+unregistersymbol(kdP_experience)
+unregistersymbol(kdP_exp_max)
+unregistersymbol(kdP_level)
+unregistersymbol(kdP_level_max)
+unregistersymbol(kdP_items)
+unregistersymbol(kdP_item_charges)
+unregistersymbol(kdP_gb_items)
+unregistersymbol(kdP_gb_item_charges)
+unregistersymbol(kdP_item_price)
+unregistersymbol(kdP_upg_price)
+unregistersymbol(kdP_cost_per_gas)
+unregistersymbol(kdP_rep_cost_per_durability)
+unregistersymbol(kdP_money_cost_mod)
+unregistersymbol(kdP_gas_cost_mod)
+unregistersymbol(kdP_energy_cost_mod)
+unregistersymbol(kdP_durability_cost_mod)
+unregistersymbol(kdP_gas_drain)
+unregistersymbol(kdP_pay)
+unregistersymbol(kdP_work_pay)
+unregistersymbol(kdP_work_cost)
+unregistersymbol(kdP_work_time)
+unregistersymbol(kdP_ailments)
+unregistersymbol(kdP_ailments_max)
+unregistersymbol(kdP_ailment_timer)
+unregistersymbol(kdP_ailment_timer_max)
+unregistersymbol(kdP_tired_stacks)
+unregistersymbol(kdP_hh_active)
+unregistersymbol(kdP_hh_level)
+unregistersymbol(kdP_seat_active)
+unregistersymbol(kdP_explore_bags)
+unregistersymbol(kdP_explore_places)
+unregistersymbol(kdP_quests)
+unregistersymbol(kdP_car_speed)
+unregistersymbol(kdVarGet)
+unregistersymbol(kdCopy)
+dealloc(kdMem)
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry><ID>9500</ID><Description>"AUTO-FIND POINTERS   [enable AFTER the main script - fills rows without waiting]"</Description><VariableType>Auto Assembler Script</VariableType><AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getOpenedProcessID()==0 then openProcess("KeepDriving.exe") end
+
+--[[ Keep Driving - automatic pointer finder.
+
+The master script waits for the game to READ a variable before a row can aim.
+This finds the pointers directly instead: it captures the stats object, walks the
+variable hash map inside it, and writes each variable's live RValue address into
+the kdP_&lt;name&gt; slot the master script already allocated. Rows and the diagnostics
+group keep working unchanged - they just fill in immediately, and they fill in for
+variables the game never reads.
+
+Map layout (read out of the game's own lookup routine):
+    object + 0x48         -&gt; hash map
+    map    + 0x08         -&gt; bucket mask  (capacity-1)
+    map    + 0x10         -&gt; bucket array, 16 bytes per entry
+    entry  + 0x00         -&gt; RValue*  (the variable's storage)
+    entry  + 0x0C         -&gt; key, which is (varid + 1) with bit 31 cleared
+    key == 0              -&gt; empty bucket
+RValue: value at +0, kind at +12. kind 0 = real number, 2 = array.
+]]
+
+-- Cheat Engine scans this entire script for its section markers, so the words
+-- must never appear as literal text here. Build them at runtime instead.
+local NL = string.char(10)
+local EN = "[EN" .. "ABLE]" .. NL
+local DIS = NL .. "[DIS" .. "ABLE]" .. NL
+
+kdAF = kdAF or {}
+
+kdAF.NAMES = {
+  "money","gas","gas_max","energy","energy_max","energy_max_normal","car_health",
+  "car_health_max","skill_points","day","time_hour","time_minute","month","day_max",
+  "road_level","threat","threat_max","enemy_level","card_rarity","experience","exp_max",
+  "level","level_max","items","item_charges","gb_items","gb_item_charges","item_price",
+  "upg_price","cost_per_gas","rep_cost_per_durability","money_cost_mod","gas_cost_mod",
+  "energy_cost_mod","durability_cost_mod","gas_drain","pay","work_pay","work_cost",
+  "work_time","ailments","ailments_max","ailment_timer","ailment_timer_max",
+  "tired_stacks","hh_active","hh_level","seat_active","explore_bags","explore_places",
+  "quests","car_speed",
+}
+
+-- module offset of each variable's id field in the .data name table
+kdAF.OFF = {
+  money=0x1B66C98, gas=0x1B66C78, gas_max=0x1B65B08, energy=0x1B65D78,
+  energy_max=0x1B65CA8, energy_max_normal=0x1B65938, car_health=0x1B66CD8,
+  car_health_max=0x1B65A08, skill_points=0x1B74FF8, day=0x1B6DD18,
+  time_hour=0x1B79868, time_minute=0x1B79848, month=0x1B6DC38, day_max=0x1B57A18,
+  road_level=0x1BC80D0, threat=0x1B5A188, threat_max=0x1B5B068, enemy_level=0x1B70B98,
+  card_rarity=0x1B5A9F8, experience=0x1B6E138, exp_max=0x1B758F8, level=0x1B565D8,
+  level_max=0x1B75988, items=0x1B65E68, item_charges=0x1B70ED8, gb_items=0x1B75458,
+  gb_item_charges=0x1B76028, item_price=0x1B8DE58, upg_price=0x1B74508,
+  cost_per_gas=0x1BCAB80, rep_cost_per_durability=0x1BCA080, money_cost_mod=0x1B61B88,
+  gas_cost_mod=0x1B61B78, energy_cost_mod=0x1B61BE8, durability_cost_mod=0x1B61BB8,
+  gas_drain=0x1B61EF8, pay=0x1B74E48, work_pay=0x1B68188, work_cost=0x1B680E8,
+  work_time=0x1B68218, ailments=0x1B65D28, ailments_max=0x1B65E08,
+  ailment_timer=0x1B65D18, ailment_timer_max=0x1B65E18, tired_stacks=0x1B65CD8,
+  hh_active=0x1B62F28, hh_level=0x1B6E448, seat_active=0x1B75E18,
+  explore_bags=0x1B72DE8, explore_places=0x1B77EC8, quests=0x1B65C08,
+  car_speed=0x1B78318,
+}
+
+-- signature for:  call FindSlot / mov r12,[..] / mov rcx,rbp ...
+-- we hook at +5, where rax = the slot just found and rbp = the object owning it
+kdAF.AOB = "E8 ?? ?? ?? ?? 4C 8B 25 ?? ?? ?? ?? 48 8B CD 44 0F B6 BC 24 80 00 00 00 48 8B F8"
+kdAF.R12OFF = "1BDA2A0"
+
+
+local function modbase()
+  return getAddress("KeepDriving.exe")
+end
+
+function kdAF.varid(name)
+  local off = kdAF.OFF[name]
+  if not off then return nil end
+  return readInteger(modbase() + off)
+end
+
+-- Install the object-capture hook. Anchors on `gas`, which the game reads early.
+function kdAF.installHook()
+  if (getAddress("kdObjStats") or 0) ~= 0 then return true end
+  local gid = kdAF.varid("gas")
+  if not gid then return false, "cannot read the gas variable id" end
+
+  local data = EN ..
+    "aobscanmodule(kdAFsite,KeepDriving.exe," .. kdAF.AOB .. ")" .. NL ..
+    "alloc(kdAFmem,$100,kdAFsite)" .. NL ..
+    "label(kdObjStats)" .. NL ..
+    "registersymbol(kdAFsite)" .. NL ..
+    "registersymbol(kdObjStats)" .. NL ..
+    "kdAFmem:" .. NL ..
+    "kdObjStats:" .. NL ..
+    "  dq 0" .. DIS
+  if not autoAssemble(data) then return false, "could not allocate the capture slot" end
+
+  -- never install a store against a symbol that failed to register: it would
+  -- assemble as  mov [0],rbp  and crash the game on the next lookup
+  if (getAddress("kdObjStats") or 0) == 0 then return false, "kdObjStats did not register" end
+
+  -- NOTE: literals in Cheat Engine's assembler are HEX, so the id is formatted %X
+  local hook = EN ..
+    "alloc(kdAFcode,$200,kdAFsite)" .. NL ..
+    "label(kdAFhook)" .. NL ..
+    "label(kdAFret)" .. NL ..
+    "label(kdAFdone)" .. NL ..
+    "registersymbol(kdAFcode)" .. NL ..
+    "kdAFcode:" .. NL ..
+    "kdAFhook:" .. NL ..
+    "  pushfq" .. NL ..
+    "  test rax,rax" .. NL ..
+    "  je kdAFdone" .. NL ..
+    string.format("  cmp esi,%X", gid) .. NL ..
+    "  jne kdAFdone" .. NL ..
+    "  mov [kdObjStats],rbp" .. NL ..
+    "kdAFdone:" .. NL ..
+    "  popfq" .. NL ..
+    "  mov r12,[KeepDriving.exe+" .. kdAF.R12OFF .. "]" .. NL ..
+    "  mov rcx,rbp" .. NL ..
+    "  jmp kdAFret" .. NL ..
+    NL ..
+    "kdAFsite+5:" .. NL ..
+    "  jmp kdAFhook" .. NL ..
+    "  nop 5" .. NL ..
+    "kdAFret:" .. DIS
+  if not autoAssemble(hook) then return false, "could not install the capture hook" end
+  return true
+end
+
+function kdAF.removeHook()
+  if (getAddress("kdAFsite") or 0) == 0 then return end
+  autoAssemble(EN ..
+    "kdAFsite+5:" .. NL ..
+    "  mov r12,[KeepDriving.exe+" .. kdAF.R12OFF .. "]" .. NL ..
+    "  mov rcx,rbp" .. DIS)
+  for _, s in ipairs({ "kdAFcode", "kdObjStats", "kdAFsite" }) do
+    autoAssemble(EN .. "unregistersymbol(" .. s .. ")" .. DIS)
+  end
+end
+
+-- Walk one object's variable map -&gt; { [varid] = RValue* }, count
+function kdAF.walk(obj)
+  if not obj or obj == 0 then return nil end
+  local map = readQword(obj + 0x48)
+  if not map or map == 0 then return nil end
+  local mask = readInteger(map + 8)
+  local buckets = readQword(map + 0x10)
+  if not mask or not buckets or buckets == 0 or mask &lt;= 0 or mask &gt; 0x100000 then
+    return nil
+  end
+  local slots, n = {}, 0
+  for i = 0, mask do
+    local e = buckets + i * 16
+    local key = readInteger(e + 0xC)
+    if key and key ~= 0 then
+      local v = readQword(e)
+      if v and v ~= 0 then
+        slots[key - 1] = v
+        n = n + 1
+      end
+    end
+  end
+  return slots, n
+end
+
+-- Resolve every row and poke the address into the master script's kdP_ slot.
+-- Only real numbers (kind 0) are assigned; an array would render as garbage in
+-- a Double row, so those are reported and left alone.
+function kdAF.resolve()
+  if (getAddress("kdP_gas") or 0) == 0 then
+    return nil, "enable the main script first - the kdP_ slots do not exist yet"
+  end
+  local obj = readQword(getAddress("kdObjStats") or 0)
+  if not obj or obj == 0 then
+    return nil, "no stats object captured yet - load a save and give it a moment"
+  end
+  local slots, n = kdAF.walk(obj)
+  if not slots then return nil, "the captured object has no readable variable map" end
+
+  local assigned, arrays, absent = {}, {}, {}
+  for _, name in ipairs(kdAF.NAMES) do
+    local sym = getAddress("kdP_" .. name)
+    local id = kdAF.varid(name)
+    local slot = id and slots[id] or nil
+    if slot then
+      local kind = readInteger(slot + 12)
+      if kind == 0 then
+        if sym and sym ~= 0 then writeQword(sym, slot) end
+        assigned[#assigned + 1] = name
+      else
+        arrays[#arrays + 1] = name .. "(kind" .. tostring(kind) .. ")"
+      end
+    else
+      absent[#absent + 1] = name
+    end
+  end
+  return { total = n, assigned = assigned, arrays = arrays, absent = absent, obj = obj }
+end
+
+function kdAF.stop()
+  if kdAF.timer then
+    kdAF.timer.Enabled = false
+    kdAF.timer.Destroy()
+    kdAF.timer = nil
+  end
+end
+
+function kdAF.start(intervalMs)
+  kdAF.stop()
+  local ok, err = kdAF.installHook()
+  if not ok then return false, err end
+  kdAF.timer = createTimer(nil, false)
+  kdAF.timer.Interval = intervalMs or 2000
+  kdAF.timer.OnTimer = function() kdAF.resolve() end
+  kdAF.timer.Enabled = true
+  return true
+end
+
+-- On-demand summary. Kept separate from enabling because CE's print() forces the
+-- Lua Engine window open, which fights with Compact mode.
+function kdAF.report()
+  local res, err = kdAF.resolve()
+  if not res then print("[auto-find] " .. tostring(err)) return end
+  print(string.format("[auto-find] object %X, %d live variables in its map", res.obj, res.total))
+  print(string.format("  assigned %d: %s", #res.assigned, table.concat(res.assigned, ", ")))
+  print(string.format("  arrays skipped %d: %s", #res.arrays, table.concat(res.arrays, ", ")))
+  print(string.format("  not in this object %d: %s", #res.absent, table.concat(res.absent, ", ")))
+end
+
+
+local ok, err = kdAF.start(2000)
+if not ok then error(tostring(err)) end
+kdAF.resolve()
+{$asm}
+
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+if kdAF then kdAF.stop() kdAF.removeHook() end
+{$asm}
+</AssemblerScript></CheatEntry><CheatEntry><ID>9505</ID><Description>"MODE: Windowed UI   [cheats in a window, table stays open]"</Description><VariableType>Auto Assembler Script</VariableType><AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+
+--[[ Keep Driving - Windowed UI.
+
+A trainer window that shows the cheats themselves, so you do not have to work the
+address list. It does not duplicate any logic: every control drives the real
+memory record in the cheat table, which means freezing uses Cheat Engine's own
+freeze and the values stay exactly as correct as the table is.
+
+The cheat table stays visible behind this window in both modes.
+]]
+
+kdT = kdT or {}
+
+-- Row label -&gt; the cheat table entry it drives. Matched on the description with
+-- the trailing "   [note]" stripped, so "Energy" never matches "Energy Max".
+kdT.VALUES = {
+  { "Money",                   "Money" },
+  { "Gas / Fuel",              "Gas" },
+  { "Gas Tank Capacity",       "Gas tank size" },
+  { "Energy",                  "Energy" },
+  { "Energy Max",              "Energy max" },
+  { "Energy Max when rested",  "Energy max rested" },
+  { "Car Health / Durability", "Car health" },
+  { "Car Health Max",          "Car health max" },
+  { "Skill Points",            "Skill points" },
+  { "Calendar - Day",          "Day" },
+  { "Clock - Hour",            "Hour" },
+  { "Clock - Minute",          "Minute" },
+}
+
+kdT.SPEEDS = {
+  { "Slow motion 0.25x",       "0.25x" },
+  { "Half speed 0.5x",         "0.5x" },
+  { "Normal speed 1x (reset)", "Normal" },
+}
+
+
+local function baseDesc(d)
+  if not d then return "" end
+  local cut = d:find("   %[")
+  return cut and d:sub(1, cut - 1) or d
+end
+
+-- exact match on the stripped description
+function kdT.rec(name)
+  local al = getAddressList()
+  if not al then return nil end
+  for i = 0, al.Count - 1 do
+    local r = al[i]
+    if r and baseDesc(r.Description) == name then return r end
+  end
+  return nil
+end
+
+function kdT.recPrefix(prefix)
+  local al = getAddressList()
+  if not al then return nil end
+  for i = 0, al.Count - 1 do
+    local r = al[i]
+    if r and r.Description and r.Description:sub(1, #prefix) == prefix then return r end
+  end
+  return nil
+end
+
+
+function kdT.close()
+  if kdT.timer then
+    kdT.timer.Enabled = false
+    kdT.timer.Destroy()
+    kdT.timer = nil
+  end
+  if kdT.form then
+    kdT.form.Destroy()
+    kdT.form = nil
+  end
+end
+
+-- Pull live state out of the table into the window. Skips a value box the user
+-- is part way through typing into, so refreshing never eats your keystrokes.
+function kdT.refresh()
+  if not kdT.form then return end
+  kdT.syncing = true
+
+  local master = kdT.recPrefix("Keep Driving v")
+  if master and kdT.cbMaster then kdT.cbMaster.Checked = master.Active end
+  local af = kdT.recPrefix("AUTO-FIND POINTERS")
+  if af and kdT.cbAuto then kdT.cbAuto.Checked = af.Active end
+
+  for i, spec in ipairs(kdT.VALUES) do
+    local r = kdT.rec(spec[1])
+    local box, frz = kdT.box[i], kdT.frz[i]
+    if r then
+      if box and not kdT.dirty[i] then
+        local ok, v = pcall(function() return r.Value end)
+        box.Text = (ok and v) and tostring(v) or "??"
+      end
+      if frz then frz.Checked = r.Active end
+      if box then box.Enabled = true end
+      if frz then frz.Enabled = true end
+    else
+      if box then box.Text = "-" box.Enabled = false end
+      if frz then frz.Enabled = false end
+    end
+  end
+
+  if kdT.status then
+    kdT.status.Caption = (master and master.Active)
+      and "main script ON - values are live"
+      or  "tick 'Main script' first, then values fill in"
+  end
+  kdT.syncing = false
+end
+
+function kdT.show()
+  kdT.close()
+  local f = createForm(false)
+  f.Caption = "Keep Driving - cheats"
+  f.Width = 470
+  f.Height = 610
+  f.BorderStyle = bsSingle
+  kdT.form = f
+
+  local sub = createLabel(f)
+  sub.Left = 12; sub.Top = 8
+  sub.Caption = "The cheat table is still open behind this window."
+
+  -- ---------------------------------------------------------- scripts
+  local h1 = createLabel(f)
+  h1.Left = 12; h1.Top = 34
+  h1.Font.Style = "fsBold"
+  h1.Caption = "SCRIPTS"
+
+  kdT.cbMaster = createCheckBox(f)
+  kdT.cbMaster.Left = 12; kdT.cbMaster.Top = 56; kdT.cbMaster.Width = 300
+  kdT.cbMaster.Caption = "Main script   (turn this on first)"
+  kdT.cbMaster.OnChange = function(s)
+    if kdT.syncing then return end
+    local r = kdT.recPrefix("Keep Driving v")
+    if r then r.Active = s.Checked end
+    kdT.refresh()
+  end
+
+  kdT.cbAuto = createCheckBox(f)
+  kdT.cbAuto.Left = 12; kdT.cbAuto.Top = 80; kdT.cbAuto.Width = 300
+  kdT.cbAuto.Caption = "Auto-find pointers   (fills rows without waiting)"
+  kdT.cbAuto.OnChange = function(s)
+    if kdT.syncing then return end
+    local r = kdT.recPrefix("AUTO-FIND POINTERS")
+    if r then r.Active = s.Checked end
+    kdT.refresh()
+  end
+
+  local hh = createButton(f)
+  hh.Left = 12; hh.Top = 106; hh.Width = 160
+  hh.Caption = "Hitchhiker editor..."
+  hh.OnClick = function()
+    if kdHH and kdHH.show then kdHH.show() else
+      kdT.status.Caption = "hitchhiker editor is not loaded - enable its table entry once"
+    end
+  end
+
+  -- ---------------------------------------------------------- speed
+  local h2 = createLabel(f)
+  h2.Left = 12; h2.Top = 142
+  h2.Font.Style = "fsBold"
+  h2.Caption = "GAME SPEED"
+
+  local sx = 12
+  for _, spec in ipairs(kdT.SPEEDS) do
+    local b = createButton(f)
+    b.Left = sx; b.Top = 164; b.Width = 96
+    b.Caption = spec[2]
+    b.OnClick = function()
+      local r = kdT.rec(spec[1])
+      if not r then kdT.status.Caption = "speed entry not found: " .. spec[1] return end
+      r.Active = true
+      kdT.status.Caption = "speed set to " .. spec[2]
+    end
+    sx = sx + 102
+  end
+
+  local speedNote = createLabel(f)
+  speedNote.Left = 12; speedNote.Top = 192
+  speedNote.Caption = "slowing works; the game will not run faster than real time"
+
+  -- ---------------------------------------------------------- values
+  local h3 = createLabel(f)
+  h3.Left = 12; h3.Top = 220
+  h3.Font.Style = "fsBold"
+  h3.Caption = "VALUES        type a number, press Set.  Freeze locks it."
+
+  kdT.box, kdT.frz, kdT.dirty = {}, {}, {}
+  for i, spec in ipairs(kdT.VALUES) do
+    local y = 244 + (i - 1) * 26
+
+    local l = createLabel(f)
+    l.Left = 12; l.Top = y + 4
+    l.Caption = spec[2]
+
+    local ed = createEdit(f)
+    ed.Left = 170; ed.Top = y; ed.Width = 86
+    ed.Text = "??"
+    ed.OnChange = function()
+      if not kdT.syncing then kdT.dirty[i] = true end
+    end
+    kdT.box[i] = ed
+
+    local set = createButton(f)
+    set.Left = 262; set.Top = y - 1; set.Width = 44
+    set.Caption = "Set"
+    set.OnClick = function()
+      local r = kdT.rec(spec[1])
+      if not r then kdT.status.Caption = "row not found: " .. spec[1] return end
+      local wanted = kdT.box[i].Text
+      local ok, err = pcall(function() r.Value = wanted end)
+      kdT.dirty[i] = false
+      kdT.refresh()   -- refresh first, so it cannot wipe the confirmation below
+      kdT.status.Caption = ok and (spec[2] .. " set to " .. wanted)
+                              or ("could not set " .. spec[2] .. ": " .. tostring(err))
+    end
+
+    local cb = createCheckBox(f)
+    cb.Left = 316; cb.Top = y + 2; cb.Width = 80
+    cb.Caption = "Freeze"
+    cb.OnChange = function(s)
+      if kdT.syncing then return end
+      local r = kdT.rec(spec[1])
+      if r then r.Active = s.Checked end
+    end
+    kdT.frz[i] = cb
+  end
+
+  kdT.status = createLabel(f)
+  kdT.status.Left = 12; kdT.status.Top = 560
+  kdT.status.Caption = ""
+
+  local cls = createButton(f)
+  cls.Left = 370; cls.Top = 556; cls.Width = 80
+  cls.Caption = "Close"
+  cls.OnClick = function()
+    -- closing the window means you want the plain table: flip the mode entries
+    if kdCM and kdCM.setMode then kdCM.setMode("advanced") else kdT.close() end
+  end
+
+  kdT.refresh()
+  kdT.timer = createTimer(nil, false)
+  kdT.timer.Interval = 1000
+  kdT.timer.OnTimer = kdT.refresh
+  kdT.timer.Enabled = true
+
+  f.Show()
+  return f
+end
+
+--[[ Keep Driving - Compact mode.
+
+Hides Cheat Engine's memory-scanning UI and leaves just the cheat table.
+
+The main form is only four top-level controls:
+    Panel5      alTop     the whole scanner - New Scan, value/scan type, scan
+                          options, the found-address list, Memory View
+    Splitter1             the drag divider under it
+    Panel1      alClient  holds the AddressList: this is the cheat table
+    Panel4      alBottom  Advanced Options / Table Extras
+Because Panel1 is alClient it expands to fill the form on its own once Panel5
+and the splitter are hidden - no repositioning needed.
+
+The menu bar stays, so File / Table / Edit still work. Panel4 stays too, since
+those buttons belong to the table rather than the scanner.
+]]
+
+kdCM = kdCM or {}
+
+kdCM.WIDTH = 600
+kdCM.HEIGHT = 560
+
+local function parts()
+  local mf = getMainForm()
+  if not mf then return nil end
+  local ok, p5 = pcall(function() return mf.Panel5 end)
+  local ok2, sp = pcall(function() return mf.Splitter1 end)
+  if not ok or not ok2 or p5 == nil or sp == nil then return nil end
+  return mf, p5, sp
+end
+
+function kdCM.on(w, h)
+  if kdCM.saved then return true end
+  local mf, p5, sp = parts()
+  if not mf then
+    return false, "this Cheat Engine build does not expose Panel5/Splitter1 - compact mode needs CE 7.x"
+  end
+  kdCM.saved = {
+    p5 = p5.Visible, sp = sp.Visible,
+    L = mf.Left, T = mf.Top, W = mf.Width, H = mf.Height,
+  }
+  p5.Visible = false
+  sp.Visible = false
+  mf.Width = w or kdCM.WIDTH
+  mf.Height = h or kdCM.HEIGHT
+  return true
+end
+
+function kdCM.off()
+  local s = kdCM.saved
+  if not s then return true end
+  local mf, p5, sp = parts()
+  if not mf then kdCM.saved = nil return false, "main form is gone" end
+  p5.Visible = s.p5
+  sp.Visible = s.sp
+  mf.Left, mf.Top, mf.Width, mf.Height = s.L, s.T, s.W, s.H
+  kdCM.saved = nil
+  return true
+end
+
+function kdCM.toggle()
+  if kdCM.saved then return kdCM.off() end
+  return kdCM.on()
+end
+
+-- ------------------------------------------------------------------ modes
+-- The table offers the two layouts as a pair of entries that behave like radio
+-- buttons: ticking one applies that layout and unticks the other. Their DISABLE
+-- sections are deliberately no-ops, so unticking never fights the layout you
+-- just chose - the ticked box simply tells you which mode you are in.
+
+kdCM.CLEAN_LABEL = "MODE: Windowed UI"
+kdCM.ADV_LABEL = "MODE: Advanced UI"
+
+local function findEntry(prefix)
+  local al = getAddressList()
+  if not al then return nil end
+  for i = 0, al.Count - 1 do
+    local r = al[i]
+    if r and r.Description and r.Description:sub(1, #prefix) == prefix then return r end
+  end
+  return nil
+end
+
+-- Untick the sibling without letting its DISABLE script run anything meaningful.
+local function untick(prefix)
+  local r = findEntry(prefix)
+  if r and r.Active then
+    kdCM.syncing = true
+    r.Active = false
+    kdCM.syncing = false
+  end
+end
+
+-- "windowed" = the trainer window plus the cheat table, scanner hidden.
+-- "advanced" = the plain cheat table with the scanner, no trainer window.
+-- The cheat table itself stays visible in BOTH modes.
+function kdCM.setMode(mode)
+  if kdCM.syncing then return true end
+  local ok, err
+  if mode == "windowed" or mode == "clean" then
+    ok, err = kdCM.on()
+    if ok and kdT and kdT.show then kdT.show() end
+    if ok then untick(kdCM.ADV_LABEL) end
+  else
+    if kdT and kdT.close then kdT.close() end
+    ok, err = kdCM.off()
+    if ok then untick(kdCM.CLEAN_LABEL) end
+  end
+  return ok, err
+end
+
+
+local ok, err = kdCM.setMode("windowed")
+if not ok then error(tostring(err)) end
+{$asm}
+
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+{$asm}
+</AssemblerScript></CheatEntry><CheatEntry><ID>9506</ID><Description>"MODE: Advanced UI   [plain cheat table, no window]"</Description><VariableType>Auto Assembler Script</VariableType><AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+
+--[[ Keep Driving - Windowed UI.
+
+A trainer window that shows the cheats themselves, so you do not have to work the
+address list. It does not duplicate any logic: every control drives the real
+memory record in the cheat table, which means freezing uses Cheat Engine's own
+freeze and the values stay exactly as correct as the table is.
+
+The cheat table stays visible behind this window in both modes.
+]]
+
+kdT = kdT or {}
+
+-- Row label -&gt; the cheat table entry it drives. Matched on the description with
+-- the trailing "   [note]" stripped, so "Energy" never matches "Energy Max".
+kdT.VALUES = {
+  { "Money",                   "Money" },
+  { "Gas / Fuel",              "Gas" },
+  { "Gas Tank Capacity",       "Gas tank size" },
+  { "Energy",                  "Energy" },
+  { "Energy Max",              "Energy max" },
+  { "Energy Max when rested",  "Energy max rested" },
+  { "Car Health / Durability", "Car health" },
+  { "Car Health Max",          "Car health max" },
+  { "Skill Points",            "Skill points" },
+  { "Calendar - Day",          "Day" },
+  { "Clock - Hour",            "Hour" },
+  { "Clock - Minute",          "Minute" },
+}
+
+kdT.SPEEDS = {
+  { "Slow motion 0.25x",       "0.25x" },
+  { "Half speed 0.5x",         "0.5x" },
+  { "Normal speed 1x (reset)", "Normal" },
+}
+
+
+local function baseDesc(d)
+  if not d then return "" end
+  local cut = d:find("   %[")
+  return cut and d:sub(1, cut - 1) or d
+end
+
+-- exact match on the stripped description
+function kdT.rec(name)
+  local al = getAddressList()
+  if not al then return nil end
+  for i = 0, al.Count - 1 do
+    local r = al[i]
+    if r and baseDesc(r.Description) == name then return r end
+  end
+  return nil
+end
+
+function kdT.recPrefix(prefix)
+  local al = getAddressList()
+  if not al then return nil end
+  for i = 0, al.Count - 1 do
+    local r = al[i]
+    if r and r.Description and r.Description:sub(1, #prefix) == prefix then return r end
+  end
+  return nil
+end
+
+
+function kdT.close()
+  if kdT.timer then
+    kdT.timer.Enabled = false
+    kdT.timer.Destroy()
+    kdT.timer = nil
+  end
+  if kdT.form then
+    kdT.form.Destroy()
+    kdT.form = nil
+  end
+end
+
+-- Pull live state out of the table into the window. Skips a value box the user
+-- is part way through typing into, so refreshing never eats your keystrokes.
+function kdT.refresh()
+  if not kdT.form then return end
+  kdT.syncing = true
+
+  local master = kdT.recPrefix("Keep Driving v")
+  if master and kdT.cbMaster then kdT.cbMaster.Checked = master.Active end
+  local af = kdT.recPrefix("AUTO-FIND POINTERS")
+  if af and kdT.cbAuto then kdT.cbAuto.Checked = af.Active end
+
+  for i, spec in ipairs(kdT.VALUES) do
+    local r = kdT.rec(spec[1])
+    local box, frz = kdT.box[i], kdT.frz[i]
+    if r then
+      if box and not kdT.dirty[i] then
+        local ok, v = pcall(function() return r.Value end)
+        box.Text = (ok and v) and tostring(v) or "??"
+      end
+      if frz then frz.Checked = r.Active end
+      if box then box.Enabled = true end
+      if frz then frz.Enabled = true end
+    else
+      if box then box.Text = "-" box.Enabled = false end
+      if frz then frz.Enabled = false end
+    end
+  end
+
+  if kdT.status then
+    kdT.status.Caption = (master and master.Active)
+      and "main script ON - values are live"
+      or  "tick 'Main script' first, then values fill in"
+  end
+  kdT.syncing = false
+end
+
+function kdT.show()
+  kdT.close()
+  local f = createForm(false)
+  f.Caption = "Keep Driving - cheats"
+  f.Width = 470
+  f.Height = 610
+  f.BorderStyle = bsSingle
+  kdT.form = f
+
+  local sub = createLabel(f)
+  sub.Left = 12; sub.Top = 8
+  sub.Caption = "The cheat table is still open behind this window."
+
+  -- ---------------------------------------------------------- scripts
+  local h1 = createLabel(f)
+  h1.Left = 12; h1.Top = 34
+  h1.Font.Style = "fsBold"
+  h1.Caption = "SCRIPTS"
+
+  kdT.cbMaster = createCheckBox(f)
+  kdT.cbMaster.Left = 12; kdT.cbMaster.Top = 56; kdT.cbMaster.Width = 300
+  kdT.cbMaster.Caption = "Main script   (turn this on first)"
+  kdT.cbMaster.OnChange = function(s)
+    if kdT.syncing then return end
+    local r = kdT.recPrefix("Keep Driving v")
+    if r then r.Active = s.Checked end
+    kdT.refresh()
+  end
+
+  kdT.cbAuto = createCheckBox(f)
+  kdT.cbAuto.Left = 12; kdT.cbAuto.Top = 80; kdT.cbAuto.Width = 300
+  kdT.cbAuto.Caption = "Auto-find pointers   (fills rows without waiting)"
+  kdT.cbAuto.OnChange = function(s)
+    if kdT.syncing then return end
+    local r = kdT.recPrefix("AUTO-FIND POINTERS")
+    if r then r.Active = s.Checked end
+    kdT.refresh()
+  end
+
+  local hh = createButton(f)
+  hh.Left = 12; hh.Top = 106; hh.Width = 160
+  hh.Caption = "Hitchhiker editor..."
+  hh.OnClick = function()
+    if kdHH and kdHH.show then kdHH.show() else
+      kdT.status.Caption = "hitchhiker editor is not loaded - enable its table entry once"
+    end
+  end
+
+  -- ---------------------------------------------------------- speed
+  local h2 = createLabel(f)
+  h2.Left = 12; h2.Top = 142
+  h2.Font.Style = "fsBold"
+  h2.Caption = "GAME SPEED"
+
+  local sx = 12
+  for _, spec in ipairs(kdT.SPEEDS) do
+    local b = createButton(f)
+    b.Left = sx; b.Top = 164; b.Width = 96
+    b.Caption = spec[2]
+    b.OnClick = function()
+      local r = kdT.rec(spec[1])
+      if not r then kdT.status.Caption = "speed entry not found: " .. spec[1] return end
+      r.Active = true
+      kdT.status.Caption = "speed set to " .. spec[2]
+    end
+    sx = sx + 102
+  end
+
+  local speedNote = createLabel(f)
+  speedNote.Left = 12; speedNote.Top = 192
+  speedNote.Caption = "slowing works; the game will not run faster than real time"
+
+  -- ---------------------------------------------------------- values
+  local h3 = createLabel(f)
+  h3.Left = 12; h3.Top = 220
+  h3.Font.Style = "fsBold"
+  h3.Caption = "VALUES        type a number, press Set.  Freeze locks it."
+
+  kdT.box, kdT.frz, kdT.dirty = {}, {}, {}
+  for i, spec in ipairs(kdT.VALUES) do
+    local y = 244 + (i - 1) * 26
+
+    local l = createLabel(f)
+    l.Left = 12; l.Top = y + 4
+    l.Caption = spec[2]
+
+    local ed = createEdit(f)
+    ed.Left = 170; ed.Top = y; ed.Width = 86
+    ed.Text = "??"
+    ed.OnChange = function()
+      if not kdT.syncing then kdT.dirty[i] = true end
+    end
+    kdT.box[i] = ed
+
+    local set = createButton(f)
+    set.Left = 262; set.Top = y - 1; set.Width = 44
+    set.Caption = "Set"
+    set.OnClick = function()
+      local r = kdT.rec(spec[1])
+      if not r then kdT.status.Caption = "row not found: " .. spec[1] return end
+      local wanted = kdT.box[i].Text
+      local ok, err = pcall(function() r.Value = wanted end)
+      kdT.dirty[i] = false
+      kdT.refresh()   -- refresh first, so it cannot wipe the confirmation below
+      kdT.status.Caption = ok and (spec[2] .. " set to " .. wanted)
+                              or ("could not set " .. spec[2] .. ": " .. tostring(err))
+    end
+
+    local cb = createCheckBox(f)
+    cb.Left = 316; cb.Top = y + 2; cb.Width = 80
+    cb.Caption = "Freeze"
+    cb.OnChange = function(s)
+      if kdT.syncing then return end
+      local r = kdT.rec(spec[1])
+      if r then r.Active = s.Checked end
+    end
+    kdT.frz[i] = cb
+  end
+
+  kdT.status = createLabel(f)
+  kdT.status.Left = 12; kdT.status.Top = 560
+  kdT.status.Caption = ""
+
+  local cls = createButton(f)
+  cls.Left = 370; cls.Top = 556; cls.Width = 80
+  cls.Caption = "Close"
+  cls.OnClick = function()
+    -- closing the window means you want the plain table: flip the mode entries
+    if kdCM and kdCM.setMode then kdCM.setMode("advanced") else kdT.close() end
+  end
+
+  kdT.refresh()
+  kdT.timer = createTimer(nil, false)
+  kdT.timer.Interval = 1000
+  kdT.timer.OnTimer = kdT.refresh
+  kdT.timer.Enabled = true
+
+  f.Show()
+  return f
+end
+
+--[[ Keep Driving - Compact mode.
+
+Hides Cheat Engine's memory-scanning UI and leaves just the cheat table.
+
+The main form is only four top-level controls:
+    Panel5      alTop     the whole scanner - New Scan, value/scan type, scan
+                          options, the found-address list, Memory View
+    Splitter1             the drag divider under it
+    Panel1      alClient  holds the AddressList: this is the cheat table
+    Panel4      alBottom  Advanced Options / Table Extras
+Because Panel1 is alClient it expands to fill the form on its own once Panel5
+and the splitter are hidden - no repositioning needed.
+
+The menu bar stays, so File / Table / Edit still work. Panel4 stays too, since
+those buttons belong to the table rather than the scanner.
+]]
+
+kdCM = kdCM or {}
+
+kdCM.WIDTH = 600
+kdCM.HEIGHT = 560
+
+local function parts()
+  local mf = getMainForm()
+  if not mf then return nil end
+  local ok, p5 = pcall(function() return mf.Panel5 end)
+  local ok2, sp = pcall(function() return mf.Splitter1 end)
+  if not ok or not ok2 or p5 == nil or sp == nil then return nil end
+  return mf, p5, sp
+end
+
+function kdCM.on(w, h)
+  if kdCM.saved then return true end
+  local mf, p5, sp = parts()
+  if not mf then
+    return false, "this Cheat Engine build does not expose Panel5/Splitter1 - compact mode needs CE 7.x"
+  end
+  kdCM.saved = {
+    p5 = p5.Visible, sp = sp.Visible,
+    L = mf.Left, T = mf.Top, W = mf.Width, H = mf.Height,
+  }
+  p5.Visible = false
+  sp.Visible = false
+  mf.Width = w or kdCM.WIDTH
+  mf.Height = h or kdCM.HEIGHT
+  return true
+end
+
+function kdCM.off()
+  local s = kdCM.saved
+  if not s then return true end
+  local mf, p5, sp = parts()
+  if not mf then kdCM.saved = nil return false, "main form is gone" end
+  p5.Visible = s.p5
+  sp.Visible = s.sp
+  mf.Left, mf.Top, mf.Width, mf.Height = s.L, s.T, s.W, s.H
+  kdCM.saved = nil
+  return true
+end
+
+function kdCM.toggle()
+  if kdCM.saved then return kdCM.off() end
+  return kdCM.on()
+end
+
+-- ------------------------------------------------------------------ modes
+-- The table offers the two layouts as a pair of entries that behave like radio
+-- buttons: ticking one applies that layout and unticks the other. Their DISABLE
+-- sections are deliberately no-ops, so unticking never fights the layout you
+-- just chose - the ticked box simply tells you which mode you are in.
+
+kdCM.CLEAN_LABEL = "MODE: Windowed UI"
+kdCM.ADV_LABEL = "MODE: Advanced UI"
+
+local function findEntry(prefix)
+  local al = getAddressList()
+  if not al then return nil end
+  for i = 0, al.Count - 1 do
+    local r = al[i]
+    if r and r.Description and r.Description:sub(1, #prefix) == prefix then return r end
+  end
+  return nil
+end
+
+-- Untick the sibling without letting its DISABLE script run anything meaningful.
+local function untick(prefix)
+  local r = findEntry(prefix)
+  if r and r.Active then
+    kdCM.syncing = true
+    r.Active = false
+    kdCM.syncing = false
+  end
+end
+
+-- "windowed" = the trainer window plus the cheat table, scanner hidden.
+-- "advanced" = the plain cheat table with the scanner, no trainer window.
+-- The cheat table itself stays visible in BOTH modes.
+function kdCM.setMode(mode)
+  if kdCM.syncing then return true end
+  local ok, err
+  if mode == "windowed" or mode == "clean" then
+    ok, err = kdCM.on()
+    if ok and kdT and kdT.show then kdT.show() end
+    if ok then untick(kdCM.ADV_LABEL) end
+  else
+    if kdT and kdT.close then kdT.close() end
+    ok, err = kdCM.off()
+    if ok then untick(kdCM.CLEAN_LABEL) end
+  end
+  return ok, err
+end
+
+
+local ok, err = kdCM.setMode("advanced")
+if not ok then error(tostring(err)) end
+{$asm}
+
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+{$asm}
+</AssemblerScript></CheatEntry><CheatEntry><ID>9502</ID><Description>"HITCHHIKER EDITOR   [opens a window - writes the SAVE, then load it]"</Description><VariableType>Auto Assembler Script</VariableType><AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+
+--[[ Keep Driving - hitchhiker editor, in Lua, for the cheat table.
+
+Passengers are a 4-seat manager. The save mirrors the in-memory model exactly:
+
+    [hitchhikers]
+    hhs            how many passengers are in the car
+    hh_N           which hitchhiker sits in seat N, -1 = empty   (N = 0..3)
+    hh_level_N     that passenger's level (the game caps it at 3)
+    hh_exp_N       experience toward the next level
+    hh_blocked_N   seat blocked flag
+    hh_picked_up_K whether hitchhiker K has ever been met         (K = 0..14)
+
+This edits the SAVE rather than live memory on purpose. The game owns a
+scr_load_hhs routine that rebuilds each passenger's name, portrait, skills and
+perks from those fields when a save loads. Writing the in-memory slot_hh array
+instead would set the id and leave every piece of derived state stale.
+
+So: close the game (or at least do not let it autosave over you), edit, then
+load the save. Every write makes a .bak first.
+]]
+
+kdHH = kdHH or {}
+
+-- roster order is the order they appear in hitchhikers.kdr, which IS the id
+kdHH.ROSTER = {
+  [0] = "suit", [1] = "hippie_girl", [2] = "mechanic", [3] = "hurricane",
+  [4] = "punk", [5] = "dog", [6] = "kid", [7] = "songwriter", [8] = "stranger",
+  [9] = "idiot", [10] = "convict", [11] = "sleeper", [12] = "hiker",
+  [13] = "bride", [14] = "couple",
+}
+kdHH.COUNT = 15
+kdHH.SEATS = 4
+kdHH.LEVEL_MAX = 3   -- the seat manager's own level_max
+kdHH.FALLBACK = [[D:\Games\Keep.Driving.v1.3.1.1d\savedata\savedata.ini]]
+
+
+-- Derive &lt;game folder&gt;\savedata\savedata.ini from the attached process, so the
+-- table works for anyone who has the game somewhere else.
+function kdHH.savePath()
+  if kdHH.path and kdHH.path ~= "" then return kdHH.path end
+  local ok, mods = pcall(enumModules)
+  if ok and type(mods) == "table" then
+    for _, m in ipairs(mods) do
+      local p = m.PathToFile or ""
+      if p:lower():find("keepdriving%.exe") then
+        local dir = p:match("^(.*)[\\/][^\\/]+$")
+        if dir then
+          kdHH.path = dir .. "\\savedata\\savedata.ini"
+          return kdHH.path
+        end
+      end
+    end
+  end
+  kdHH.path = kdHH.FALLBACK
+  return kdHH.path
+end
+
+
+-- The editor writes the SAVE. A running game has already loaded its own copy and
+-- will autosave over anything written here, so writing while it runs looks like
+-- "nothing happened". Refuse instead of failing silently.
+function kdHH.gameRunning()
+  local ok, pid = pcall(getProcessIDFromProcessName, "KeepDriving.exe")
+  if ok and pid and pid ~= 0 then return true, pid end
+  return false
+end
+
+function kdHH.read()
+  local f = io.open(kdHH.savePath(), "rb")
+  if not f then return nil, "cannot open " .. kdHH.savePath() end
+  local s = f:read("*a")
+  f:close()
+  return s
+end
+
+-- keys always sit at the start of a line, so anchor on the newline: that keeps
+-- hh_1 from matching inside hh_picked_up_1 or hh_level_1
+local function keypat(key)
+  return "\n" .. key .. "=\"([^\"]*)\""
+end
+
+function kdHH.get(text, key)
+  return text:match(keypat(key))
+end
+
+function kdHH.put(text, key, value)
+  local pat = "(\n" .. key .. "=\")[^\"]*(\")"
+  local new, n = text:gsub(pat, "%1" .. value .. "%2", 1)
+  if n == 0 then return text, false end
+  return new, true
+end
+
+local function num(v)
+  return string.format("%.6f", v)
+end
+
+function kdHH.state()
+  local text, err = kdHH.read()
+  if not text then return nil, err end
+  local st = { hhs = tonumber(kdHH.get(text, "hhs") or "0") or 0, seats = {} }
+  for s = 0, kdHH.SEATS - 1 do
+    local id = math.floor(tonumber(kdHH.get(text, "hh_" .. s) or "-1") or -1)
+    st.seats[s] = {
+      id = id,
+      name = (id &gt;= 0 and kdHH.ROSTER[id]) or "empty",
+      level = math.floor(tonumber(kdHH.get(text, "hh_level_" .. s) or "0") or 0),
+      exp = math.floor(tonumber(kdHH.get(text, "hh_exp_" .. s) or "0") or 0),
+    }
+  end
+  return st
+end
+
+function kdHH.describe()
+  local st, err = kdHH.state()
+  if not st then return "ERROR: " .. tostring(err) end
+  local lines = { string.format("passengers: %d", st.hhs) }
+  for s = 0, kdHH.SEATS - 1 do
+    local e = st.seats[s]
+    lines[#lines + 1] = string.format("seat %d: %-12s  level %d", s, e.name, e.level)
+  end
+  return table.concat(lines, "\n")
+end
+
+-- Write the whole seat layout at once. seats = { [0]={id=,level=}, ... }
+function kdHH.apply(seats)
+  if kdHH.gameRunning() then
+    return false, "Keep Driving is running - close it first. While it runs it "
+      .. "overwrites this file on every autosave."
+  end
+  local text, err = kdHH.read()
+  if not text then return false, err end
+  local clamped = nil
+
+  local missing = {}
+  local live = 0
+  for s = 0, kdHH.SEATS - 1 do
+    local want = seats[s] or { id = -1, level = 0 }
+    local id = math.floor(want.id or -1)
+    local lvl = math.floor(want.level or 0)
+    if id &lt; -1 or id &gt;= kdHH.COUNT then return false, "seat " .. s .. ": id out of range" end
+    if id &gt;= 0 then
+      -- the game caps levels at level_max; anything else is not a real level
+      local fixed = math.max(1, math.min(kdHH.LEVEL_MAX, lvl))
+      if fixed ~= lvl then clamped = (clamped or "") .. " seat" .. s .. ":" .. lvl .. "-&gt;" .. fixed end
+      lvl = fixed
+    end
+    local ok1, ok2, ok3, ok4
+    text, ok1 = kdHH.put(text, "hh_" .. s, num(id))
+    text, ok2 = kdHH.put(text, "hh_level_" .. s, num(id &gt;= 0 and lvl or 0))
+    text, ok3 = kdHH.put(text, "hh_exp_" .. s, num(0))
+    text, ok4 = kdHH.put(text, "hh_blocked_" .. s, num(0))
+    if not (ok1 and ok2 and ok3) then missing[#missing + 1] = "hh_" .. s end
+    if id &gt;= 0 then
+      live = live + 1
+      -- mark them as met so their dialogue/quest state stays consistent
+      text = kdHH.put(text, "hh_picked_up_" .. id, num(1))
+    end
+  end
+  if #missing &gt; 0 then
+    return false, "these keys are not in the save: " .. table.concat(missing, ", ")
+  end
+  text = kdHH.put(text, "hhs", num(live))
+
+  local path = kdHH.savePath()
+  local src = io.open(path, "rb")
+  if src then
+    local all = src:read("*a"); src:close()
+    local bak = io.open(path .. ".bak", "wb")
+    if bak then bak:write(all) bak:close() end
+  end
+  local out = io.open(path, "wb")
+  if not out then return false, "cannot write " .. path end
+  out:write(text)
+  out:close()
+  return true, live, clamped
+end
+
+function kdHH.set(seat, id, level)
+  local st, err = kdHH.state()
+  if not st then return false, err end
+  local seats = {}
+  for s = 0, kdHH.SEATS - 1 do
+    seats[s] = { id = st.seats[s].id, level = st.seats[s].level }
+  end
+  seats[seat] = { id = id, level = level or 1 }
+  return kdHH.apply(seats)
+end
+
+function kdHH.clearAll()
+  local seats = {}
+  for s = 0, kdHH.SEATS - 1 do seats[s] = { id = -1, level = 0 } end
+  return kdHH.apply(seats)
+end
+
+
+-- ---------------------------------------------------------------- the window
+
+function kdHH.close()
+  if kdHH.watch then
+    kdHH.watch.Enabled = false
+    kdHH.watch.Destroy()
+    kdHH.watch = nil
+  end
+  if kdHH.form then
+    kdHH.form.Destroy()
+    kdHH.form = nil
+  end
+end
+
+-- Live "is the game running" readout. This is the whole reason an edit can look
+-- like it did nothing, so it is shown in the window and refreshed once a second,
+-- and the writing buttons are disabled while the game is up.
+function kdHH.updateGameState()
+  if not kdHH.form or not kdHH.live then return end
+  local running = kdHH.gameRunning()
+  if running then
+    kdHH.live.Caption = "Keep Driving is RUNNING  -  close it before step 3"
+    kdHH.live.Font.Color = 0x0000C0
+  else
+    kdHH.live.Caption = "Keep Driving is closed  -  safe to write"
+    kdHH.live.Font.Color = 0x008000
+  end
+  if kdHH.btnWrite then kdHH.btnWrite.Enabled = not running end
+  if kdHH.btnEmpty then kdHH.btnEmpty.Enabled = not running end
+end
+
+function kdHH.refresh()
+  if not kdHH.form then return end
+  local st = kdHH.state()
+  if not st then return end
+  for s = 0, kdHH.SEATS - 1 do
+    kdHH.combo[s].ItemIndex = st.seats[s].id + 1      -- row 0 is "(empty)"
+    kdHH.lvl[s].Text = tostring(st.seats[s].level)
+  end
+  kdHH.status.Caption = string.format("passengers in car: %d", st.hhs)
+end
+
+function kdHH.show()
+  kdHH.close()
+  local f = createForm(false)
+  f.Caption = "Keep Driving - hitchhikers"
+  f.Width = 470
+  f.Height = 420
+  f.BorderStyle = bsSingle
+  kdHH.form = f
+
+  local path = createLabel(f)
+  path.Left = 12; path.Top = 8
+  path.Caption = "save: " .. kdHH.savePath()
+
+  kdHH.combo, kdHH.lvl = {}, {}
+  for s = 0, kdHH.SEATS - 1 do
+    local y = 34 + s * 28
+    local l = createLabel(f)
+    l.Left = 12; l.Top = y + 4; l.Caption = "seat " .. s
+
+    local cb = createComboBox(f)
+    cb.Left = 66; cb.Top = y; cb.Width = 190
+    cb.Style = csDropDownList
+    cb.Items.add("(empty)")
+    for i = 0, kdHH.COUNT - 1 do cb.Items.add(i .. "  " .. kdHH.ROSTER[i]) end
+    kdHH.combo[s] = cb
+
+    local ll = createLabel(f)
+    ll.Left = 266; ll.Top = y + 4; ll.Caption = "level"
+
+    local ed = createEdit(f)
+    ed.Left = 302; ed.Top = y; ed.Width = 34
+    ed.Text = "1"
+    kdHH.lvl[s] = ed
+  end
+
+  kdHH.status = createLabel(f)
+  kdHH.status.Left = 12; kdHH.status.Top = 152
+  kdHH.status.Caption = ""
+
+  local apply = createButton(f)
+  apply.Left = 12; apply.Top = 176; apply.Width = 96
+  apply.Caption = "Write save"
+  kdHH.btnWrite = apply
+  apply.OnClick = function()
+    local seats = {}
+    for s = 0, kdHH.SEATS - 1 do
+      local idx = kdHH.combo[s].ItemIndex
+      seats[s] = { id = idx - 1, level = tonumber(kdHH.lvl[s].Text) or 1 }
+    end
+    local ok, res, clamped = kdHH.apply(seats)
+    if ok then
+      kdHH.status.Caption = "written - " .. res .. " passenger(s). Now do step 4."
+        .. (clamped and ("  [level capped:" .. clamped .. "]") or "")
+    else
+      kdHH.status.Caption = "NOT written: " .. tostring(res)
+    end
+  end
+
+  local reload = createButton(f)
+  reload.Left = 118; reload.Top = 176; reload.Width = 96
+  reload.Caption = "Re-read"
+  reload.OnClick = kdHH.refresh
+
+  local clr = createButton(f)
+  clr.Left = 224; clr.Top = 176; clr.Width = 96
+  clr.Caption = "Empty car"
+  kdHH.btnEmpty = clr
+  clr.OnClick = function()
+    for s = 0, kdHH.SEATS - 1 do
+      kdHH.combo[s].ItemIndex = 0
+      kdHH.lvl[s].Text = "0"
+    end
+    local ok, res = kdHH.clearAll()
+    kdHH.status.Caption = ok and "car emptied - now do step 4"
+                              or ("NOT written: " .. tostring(res))
+  end
+
+  local cls = createButton(f)
+  cls.Left = 330; cls.Top = 176; cls.Width = 80
+  cls.Caption = "Close"
+  cls.OnClick = kdHH.close
+
+  -- ------------------------------------------------ how to use, in order
+  local head = createLabel(f)
+  head.Left = 12; head.Top = 212
+  head.Font.Style = "fsBold"
+  head.Caption = "HOW TO USE  -  the order matters"
+
+  local steps = {
+    "1.   Close Keep Driving.  While it runs it overwrites this file,",
+    "      so an edit made now would look like it did nothing.",
+    "2.   Pick who sits in each seat above.  Level is 1 to 3.",
+    "3.   Press  Write save.",
+    "4.   Start Keep Driving and pick  Continue  -  they are in the car.",
+  }
+  for i, line in ipairs(steps) do
+    local l = createLabel(f)
+    l.Left = 12; l.Top = 236 + (i - 1) * 18
+    l.Caption = line
+  end
+
+  local note = createLabel(f)
+  note.Left = 12; note.Top = 332
+  note.Caption = "Removing: set a seat to (empty), or use the game's own kick button."
+
+  local bak = createLabel(f)
+  bak.Left = 12; bak.Top = 352
+  bak.Caption = "Every write leaves a .bak beside the save."
+
+  kdHH.live = createLabel(f)
+  kdHH.live.Left = 12; kdHH.live.Top = 378
+  kdHH.live.Font.Style = "fsBold"
+  kdHH.live.Caption = ""
+
+  kdHH.refresh()
+  kdHH.updateGameState()
+
+  kdHH.watch = createTimer(nil, false)
+  kdHH.watch.Interval = 1000
+  kdHH.watch.OnTimer = kdHH.updateGameState
+  kdHH.watch.Enabled = true
+
+  f.Show()
+  return f
+end
+
+
+kdHH.show()
+{$asm}
+
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+if kdHH then kdHH.close() end
+{$asm}
+</AssemblerScript></CheatEntry><CheatEntry>
+          <ID>1001</ID>
+          <Description>"=== CORE  (verified: aims within seconds) ==="</Description>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>1002</ID>
+              <Description>"Money   [needs a transaction/save before it aims]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_money</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1003</ID>
+              <Description>"Gas / Fuel   [stock 10, tank holds 13]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_gas</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1004</ID>
+              <Description>"Gas Tank Capacity   [stock 13 - raise before setting Gas higher]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_gas_max</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1005</ID>
+              <Description>"Energy   [stock 6]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_energy</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1006</ID>
+              <Description>"Energy Max   [stock 9]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_energy_max</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1007</ID>
+              <Description>"Energy Max when rested   [stock 10]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_energy_max_normal</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1008</ID>
+              <Description>"Car Health / Durability   [stock 12]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_car_health</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1009</ID>
+              <Description>"Car Health Max   [stock 16 - raising it grows the gauge]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_car_health_max</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1010</ID>
+              <Description>"Skill Points   [stock 2]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_skill_points</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1011</ID>
+              <Description>"Calendar - Day   [freeze to stop quest deadlines]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_day</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1012</ID>
+              <Description>"Clock - Hour   [freeze to stop the day advancing]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_time_hour</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1013</ID>
+              <Description>"Clock - Minute"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_time_minute</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1014</ID>
+          <Description>"=== SITUATIONAL - WORKING (14 of 40 with auto-find) ==="</Description>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>1015</ID>
+              <Description>"Calendar - Month   [map screen. 0-based: June reads 5]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_month</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1016</ID>
+              <Description>"Calendar - Days in month   [aims after you click a map node]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_day_max</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1017</ID>
+              <Description>"Road Level (difficulty)   [on the road]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_road_level</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1018</ID>
+              <Description>"Encounter - Threat   [INTERMITTENT - aimed in 3 of 5 events. Writing works: 1 collapsed a 6-icon event, 0 ended it. Goes STALE after the event and reads garbage]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_threat</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1023</ID>
+              <Description>"Experience to next level   [populates after an event]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_exp_max</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1026</ID>
+              <Description>"Inventory - item count   [UNRELIABLE - reads 7 in the trunk, 30 in a shop, 316 in an event]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_items</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1028</ID>
+              <Description>"Glovebox - item count   [glovebox open]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_gb_items</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1043</ID>
+              <Description>"Status - ailment count   [matches savedata.ini]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_ailments</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1044</ID>
+              <Description>"Status - ailment slots"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_ailments_max</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1047</ID>
+              <Description>"Status - tired stacks   [matches savedata.ini]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_tired_stacks</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1053</ID>
+              <Description>"Quests - count   [UNRELIABLE - 41 at the menu, 0 in game]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_quests</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1035</ID>
+              <Description>"Cost modifier - gas   [AUTO-FOUND (reads 100 = normal)]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_gas_cost_mod</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1036</ID>
+              <Description>"Cost modifier - energy   [AUTO-FOUND (reads 0)]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_energy_cost_mod</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1038</ID>
+              <Description>"Gas drain rate   [AUTO-FOUND. Set 0 for infinite fuel - measured: 0.0349 gas/s -&gt; 0.0000 while driving]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_gas_drain</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1055</ID>
+          <Description>"=== GAME SPEED (slowing only - 2x/4x removed, measured no effect) ==="</Description>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>1056</ID>
+              <Description>"Slow motion 0.25x   [measured: 0.30x of normal]"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getOpenedProcessID()==0 then openProcess("KeepDriving.exe") end
+speedhack_setSpeed(0.25)
+{$asm}
+
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+speedhack_setSpeed(1)
+{$asm}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1057</ID>
+              <Description>"Half speed 0.5x   [same mechanism as 0.25x, not separately measured]"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getOpenedProcessID()==0 then openProcess("KeepDriving.exe") end
+speedhack_setSpeed(0.5)
+{$asm}
+
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+speedhack_setSpeed(1)
+{$asm}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1060</ID>
+              <Description>"Normal speed 1x (reset)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if getOpenedProcessID()==0 then openProcess("KeepDriving.exe") end
+speedhack_setSpeed(1)
+{$asm}
+
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+speedhack_setSpeed(1)
+{$asm}
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>1061</ID>
+          <Description>"--- diagnostics: captured pointers (0 = not aimed yet) ---"</Description>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>1062</ID>
+              <Description>"ptr: money"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_money</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1063</ID>
+              <Description>"ptr: gas"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_gas</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1064</ID>
+              <Description>"ptr: gas_max"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_gas_max</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1065</ID>
+              <Description>"ptr: energy"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_energy</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1066</ID>
+              <Description>"ptr: energy_max"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_energy_max</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1067</ID>
+              <Description>"ptr: energy_max_normal"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_energy_max_normal</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1068</ID>
+              <Description>"ptr: car_health"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_car_health</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1069</ID>
+              <Description>"ptr: car_health_max"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_car_health_max</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1070</ID>
+              <Description>"ptr: skill_points"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_skill_points</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1071</ID>
+              <Description>"ptr: day"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_day</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1072</ID>
+              <Description>"ptr: time_hour"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_time_hour</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1073</ID>
+              <Description>"ptr: time_minute"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_time_minute</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1074</ID>
+              <Description>"ptr: month"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_month</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1075</ID>
+              <Description>"ptr: day_max"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_day_max</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1076</ID>
+              <Description>"ptr: road_level"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_road_level</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1077</ID>
+              <Description>"ptr: threat"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_threat</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1078</ID>
+              <Description>"ptr: threat_max"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_threat_max</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1079</ID>
+              <Description>"ptr: enemy_level"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_enemy_level</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1080</ID>
+              <Description>"ptr: card_rarity"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_card_rarity</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1081</ID>
+              <Description>"ptr: experience"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_experience</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1082</ID>
+              <Description>"ptr: exp_max"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_exp_max</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1083</ID>
+              <Description>"ptr: level"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_level</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1084</ID>
+              <Description>"ptr: level_max"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_level_max</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1085</ID>
+              <Description>"ptr: items"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_items</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1086</ID>
+              <Description>"ptr: item_charges"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_item_charges</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1087</ID>
+              <Description>"ptr: gb_items"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_gb_items</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1088</ID>
+              <Description>"ptr: gb_item_charges"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_gb_item_charges</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1089</ID>
+              <Description>"ptr: item_price"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_item_price</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1090</ID>
+              <Description>"ptr: upg_price"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_upg_price</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1091</ID>
+              <Description>"ptr: cost_per_gas"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_cost_per_gas</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1092</ID>
+              <Description>"ptr: rep_cost_per_durability"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_rep_cost_per_durability</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1093</ID>
+              <Description>"ptr: money_cost_mod"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_money_cost_mod</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1094</ID>
+              <Description>"ptr: gas_cost_mod"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_gas_cost_mod</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1095</ID>
+              <Description>"ptr: energy_cost_mod"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_energy_cost_mod</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1096</ID>
+              <Description>"ptr: durability_cost_mod"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_durability_cost_mod</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1097</ID>
+              <Description>"ptr: gas_drain"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_gas_drain</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1098</ID>
+              <Description>"ptr: pay"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_pay</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1099</ID>
+              <Description>"ptr: work_pay"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_work_pay</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1100</ID>
+              <Description>"ptr: work_cost"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_work_cost</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1101</ID>
+              <Description>"ptr: work_time"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_work_time</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1102</ID>
+              <Description>"ptr: ailments"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_ailments</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1103</ID>
+              <Description>"ptr: ailments_max"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_ailments_max</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1104</ID>
+              <Description>"ptr: ailment_timer"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_ailment_timer</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1105</ID>
+              <Description>"ptr: ailment_timer_max"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_ailment_timer_max</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1106</ID>
+              <Description>"ptr: tired_stacks"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_tired_stacks</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1107</ID>
+              <Description>"ptr: hh_active"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_hh_active</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1108</ID>
+              <Description>"ptr: hh_level"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_hh_level</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1109</ID>
+              <Description>"ptr: seat_active"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_seat_active</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1110</ID>
+              <Description>"ptr: explore_bags"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_explore_bags</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1111</ID>
+              <Description>"ptr: explore_places"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_explore_places</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1112</ID>
+              <Description>"ptr: quests"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_quests</Address>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1113</ID>
+              <Description>"ptr: car_speed"</Description>
+              <ShowAsHex>1</ShowAsHex>
+              <VariableType>8 Bytes</VariableType>
+              <Address>kdP_car_speed</Address>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+      <CheatEntry><ID>9000</ID><Description>"=== BROKEN - never populate, kept for reference ==="</Description><Options moHideChildren="1" /><GroupHeader>1</GroupHeader><CheatEntries><CheatEntry>
+              <ID>1019</ID>
+              <Description>"Encounter - Threat Max   [DEAD - tested: 3 full road events]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_threat_max</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1020</ID>
+              <Description>"Encounter - Enemy Level   [DEAD - tested: 3 full road events]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_enemy_level</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1021</ID>
+              <Description>"Encounter - Card Rarity   [DEAD - tested: 3 full road events]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_card_rarity</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1022</ID>
+              <Description>"Experience   [DEAD - tested: level-up not reached]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_experience</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1024</ID>
+              <Description>"Level   [DEAD - tested: level-up not reached]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_level</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1025</ID>
+              <Description>"Level Max   [DEAD - tested: level-up not reached]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_level_max</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1027</ID>
+              <Description>"Inventory - item charges   [DEAD - tested: trunk open, 5 items hovered - and it is an ARRAY (RValue kind 2)]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_item_charges</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1029</ID>
+              <Description>"Glovebox - item charges   [DEAD - tested: glovebox showing 5/5 - also an ARRAY (RValue kind 2)]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_gb_item_charges</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1030</ID>
+              <Description>"Shop - item price   [DEAD - tested: shop open, DUCT TAPE hovered at 11.25, garage item at 25]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_item_price</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1031</ID>
+              <Description>"Shop - upgrade price   [DEAD - tested: garage SHOP hovering RIMMED WHEELS 25]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_upg_price</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1032</ID>
+              <Description>"Shop - fuel price per unit   [DEAD - tested: fuel pump screen open]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_cost_per_gas</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1033</ID>
+              <Description>"Shop - repair cost per point   [DEAD - tested: garage REPAIR quoting 55 and 20 after car health set to 5]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_rep_cost_per_durability</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1034</ID>
+              <Description>"Cost modifier - money   [DEAD - tested: shop, pump and garage]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_money_cost_mod</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1037</ID>
+              <Description>"Cost modifier - durability   [DEAD - tested: shop, pump and garage]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_durability_cost_mod</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1039</ID>
+              <Description>"Work - pay   [DEAD - tested: no work site reached]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_pay</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1040</ID>
+              <Description>"Work - listed pay   [DEAD - tested: no work site reached]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_work_pay</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1041</ID>
+              <Description>"Work - energy cost   [DEAD - tested: no work site reached]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_work_cost</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1042</ID>
+              <Description>"Work - hours taken   [DEAD - tested: no work site reached]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_work_time</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1045</ID>
+              <Description>"Status - ailment timer   [DEAD - tested: 2 ailments active, icons hovered]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_ailment_timer</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1046</ID>
+              <Description>"Status - ailment duration   [DEAD - tested: 2 ailments active, icons hovered]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_ailment_timer_max</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1048</ID>
+              <Description>"Hitchhiker - active   [DEAD - tested: passenger aboard, HITCHER panel open]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_hh_active</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1049</ID>
+              <Description>"Hitchhiker - level   [DEAD - tested: passenger aboard, HITCHER panel open]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_hh_level</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1050</ID>
+              <Description>"Seats - active   [DEAD - tested: trunk / seats panel open]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_seat_active</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1051</ID>
+              <Description>"Exploration - bags found   [DEAD - tested: no explore site reached]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_explore_bags</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1052</ID>
+              <Description>"Exploration - places   [DEAD - tested: no explore site reached]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_explore_places</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1054</ID>
+              <Description>"Car speed   [DEAD - tested: while driving]"</Description>
+              <VariableType>Double</VariableType>
+              <Address>kdP_car_speed</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+          </CheatEntries></CheatEntry></CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+</CheatTable>
