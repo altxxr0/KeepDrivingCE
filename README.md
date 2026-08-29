@@ -148,23 +148,24 @@ Exploration rows, because no work site or explore site came up.
 
 ## Versions
 
-Every iteration is in [`versions/`](versions/), each a complete loadable `.CT`, with a
-changelog in [`versions/VERSIONS.md`](versions/VERSIONS.md). They are cumulative — v11
-contains everything below it.
+Every iteration has its own [release](https://github.com/altxxr0/KeepDrivingCE/releases)
+with a download, and is also in [`versions/`](versions/) with a changelog in
+[`versions/VERSIONS.md`](versions/VERSIONS.md). They are cumulative — v11 contains
+everything below it.
 
 | | |
 |---|---|
-| v01 | the table as originally received — **does not load** |
-| v02 | the compile fix |
-| v03 | tested, working/broken split, dead speed scripts removed |
-| v04 | auto-find pointers |
-| v05 | compact mode |
-| v06 | hitchhiker editor |
-| v07 | hitchhiker editor guards |
-| v08 | editor instructions + live indicator |
-| v09 | two UI modes |
-| v10 | windowed trainer |
-| **v11** | **current** — layout fix |
+| [v01](https://github.com/altxxr0/KeepDrivingCE/releases/tag/v01) | the table as originally received — **does not load** |
+| [v02](https://github.com/altxxr0/KeepDrivingCE/releases/tag/v02) | the compile fix |
+| [v03](https://github.com/altxxr0/KeepDrivingCE/releases/tag/v03) | tested, working/broken split, dead speed scripts removed |
+| [v04](https://github.com/altxxr0/KeepDrivingCE/releases/tag/v04) | auto-find pointers |
+| [v05](https://github.com/altxxr0/KeepDrivingCE/releases/tag/v05) | compact mode |
+| [v06](https://github.com/altxxr0/KeepDrivingCE/releases/tag/v06) | hitchhiker editor |
+| [v07](https://github.com/altxxr0/KeepDrivingCE/releases/tag/v07) | hitchhiker editor guards |
+| [v08](https://github.com/altxxr0/KeepDrivingCE/releases/tag/v08) | editor instructions + live indicator |
+| [v09](https://github.com/altxxr0/KeepDrivingCE/releases/tag/v09) | two UI modes |
+| [v10](https://github.com/altxxr0/KeepDrivingCE/releases/tag/v10) | windowed trainer |
+| **[v11](https://github.com/altxxr0/KeepDrivingCE/releases/tag/v11)** | **current** — layout fix |
 
 ### Notable fixes along the way
 
